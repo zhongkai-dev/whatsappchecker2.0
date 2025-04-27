@@ -1326,6 +1326,38 @@ app.post('/broadcast', tokenAuth, async (req, res) => {
     }
 });
 
+// Add a simplified admin login route for debugging
+app.post('/admin-login-debug', bodyParser.json(), (req, res) => {
+    try {
+        const { username, password } = req.body;
+        console.log(`Debug login attempt: username=${username}, password=${password ? "provided" : "missing"}`);
+        
+        // Simple response for testing
+        if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+            const token = 'debug-token-' + Date.now();
+            return res.status(200).json({ 
+                success: true, 
+                token,
+                message: 'Debug login successful' 
+            });
+        }
+        
+        return res.status(401).json({ 
+            success: false, 
+            error: 'Invalid credentials',
+            expectedUsername: ADMIN_USERNAME,
+            providedUsername: username
+        });
+    } catch (err) {
+        console.error('Debug login error:', err);
+        return res.status(500).json({ 
+            success: false, 
+            error: 'Server error during debug login',
+            errorMessage: err.message
+        });
+    }
+});
+
 // 404 Error Handling - This must be after all other routes
 app.use((req, res) => {
     res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));

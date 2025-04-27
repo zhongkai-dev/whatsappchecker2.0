@@ -171,6 +171,10 @@
             </div>
 
             <button type="submit" class="btn">Log In</button>
+            
+            <div style="margin-top: 15px; text-align: center;">
+                <a href="#" id="debug-login" style="color: var(--primary); text-decoration: none; font-size: 0.8rem;">Debug Login</a>
+            </div>
         </form>
     </div>
 
@@ -249,6 +253,55 @@
                 } catch (error) {
                     console.error('Login error:', error);
                     showError('An error occurred. Please try again.');
+                }
+            });
+            
+            // Add debug login handler
+            document.getElementById('debug-login').addEventListener('click', async function(e) {
+                e.preventDefault();
+                const username = document.getElementById('username').value.trim();
+                const password = document.getElementById('password').value.trim();
+                
+                if (!username || !password) {
+                    showError('Please enter both username and password');
+                    return;
+                }
+                
+                try {
+                    showError('Debug login in progress...', true);
+                    
+                    const response = await fetch('/admin-login-debug', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ username, password })
+                    });
+                    
+                    const resultText = await response.text();
+                    showError(`Server response: ${resultText}`, true);
+                    
+                    let result;
+                    
+                    try {
+                        result = JSON.parse(resultText);
+                        
+                        if (result.success && result.token) {
+                            // Store token in localStorage
+                            localStorage.setItem('adminAuthToken', result.token);
+                            showError('Debug login successful! Redirecting...', true);
+                            
+                            // Redirect after 3 seconds
+                            setTimeout(() => {
+                                window.location.href = `/admin?token=${result.token}`;
+                            }, 3000);
+                        }
+                    } catch (e) {
+                        console.error('Failed to parse response:', resultText);
+                    }
+                } catch (error) {
+                    console.error('Debug login error:', error);
+                    showError(`Error during debug login: ${error.message}`);
                 }
             });
             
