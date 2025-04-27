@@ -681,7 +681,13 @@ app.use(express.json());
 
 // Generate a random token
 function generateToken() {
-    return crypto.randomBytes(32).toString('hex');
+    try {
+        return crypto.randomBytes(32).toString('hex');
+    } catch (error) {
+        console.error('Error generating token:', error);
+        // Fallback to a less secure but working alternative if crypto fails
+        return Math.random().toString(36).substring(2) + Date.now().toString(36);
+    }
 }
 
 // Validate admin token
@@ -707,34 +713,67 @@ app.post('/admin-login', bodyParser.json(), async (req, res) => {
     try {
         console.log(`Admin login attempt: username=${username}, password=${password ? "provided" : "missing"}`);
         
+        if (!username || !password) {
+            console.log("Login failed - missing username or password");
+            return res.status(400).json({ success: false, error: 'Username and password are required' });
+        }
+        
         // Check against hardcoded credentials first for simplicity
         if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
             console.log("Login successful using hardcoded credentials");
-            const token = generateToken();
-            ADMIN_TOKENS.set(token, { createdAt: Date.now() });
-            
-            // Return success with token
-            return res.json({ success: true, token });
+            try {
+                const token = generateToken();
+                ADMIN_TOKENS.set(token, { createdAt: Date.now() });
+                
+                // Return success with token
+                return res.json({ success: true, token });
+            } catch (tokenErr) {
+                console.error("Error generating token:", tokenErr);
+                return res.status(500).json({ success: false, error: 'Error generating authentication token' });
+            }
         }
         
-        // Check credentials against MongoDB stored admin user
-        const adminUser = await adminCollection.findOne({ username });
-        console.log("DB admin lookup result:", adminUser ? "found" : "not found");
+        // Check if MongoDB collections are initialized
+        if (!adminCollection) {
+            console.error("MongoDB not connected or collections not initialized");
+            return res.status(500).json({ success: false, error: 'Database not available' });
+        }
         
-        if (adminUser && await bcrypt.compare(password, adminUser.password)) {
-            console.log("Login successful using database credentials");
-            const token = generateToken();
-            ADMIN_TOKENS.set(token, { createdAt: Date.now() });
+        try {
+            // Check credentials against MongoDB stored admin user
+            const adminUser = await adminCollection.findOne({ username });
+            console.log("DB admin lookup result:", adminUser ? "found" : "not found");
             
-            // Return success with token
-            return res.json({ success: true, token });
-        } else {
-            console.log("Login failed - invalid credentials");
-            return res.status(401).json({ success: false, error: 'Invalid credentials' });
+            if (adminUser) {
+                try {
+                    const passwordMatch = await bcrypt.compare(password, adminUser.password);
+                    
+                    if (passwordMatch) {
+                        console.log("Login successful using database credentials");
+                        const token = generateToken();
+                        ADMIN_TOKENS.set(token, { createdAt: Date.now() });
+                        
+                        // Return success with token
+                        return res.json({ success: true, token });
+                    } else {
+                        console.log("Login failed - password doesn't match");
+                        return res.status(401).json({ success: false, error: 'Invalid credentials' });
+                    }
+                } catch (bcryptErr) {
+                    console.error("Error comparing passwords:", bcryptErr);
+                    return res.status(500).json({ success: false, error: 'Error validating credentials' });
+                }
+            } else {
+                console.log("Login failed - user not found");
+                return res.status(401).json({ success: false, error: 'Invalid credentials' });
+            }
+        } catch (dbErr) {
+            console.error("Database error during login:", dbErr);
+            return res.status(500).json({ success: false, error: 'Database error' });
         }
     } catch (err) {
         console.error('Login error:', err);
-        return res.status(500).json({ error: 'Server error' });
+        return res.status(500).json({ success: false, error: 'Server error' });
     }
 });
 
@@ -1093,7 +1132,7 @@ app.post('/admin/toggle-api-key', tokenAuth, async (req, res) => {
         
         res.json({ 
             success: true, 
-            message: `API key ${disabled ? 'disabled' : 'enabled'} successfully` 
+            message: `API key ${disabled ? 'disabled' : 'enabled'} successfully`
         });
     } catch (err) {
         console.error('Error toggling API key:', err);
@@ -1101,219 +1140,1440 @@ app.post('/admin/toggle-api-key', tokenAuth, async (req, res) => {
     }
 });
 
-// Admin - Dashboard statistics
-app.get('/admin/stats', tokenAuth, async (req, res) => {
-    try {
-        // Get today's date at midnight
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        // Total users count
-        const totalUsers = await usersCollection.countDocuments();
-        
-        // Total checks count
-        const totalChecks = await usageCollection.countDocuments();
-        
-        // Today's active users
-        const todayActiveUsers = await usersCollection.countDocuments({
-            lastActive: { $gte: today.toISOString() }
-        });
-        
-        // Today's checks count
-        const todayChecks = await usageCollection.countDocuments({
-            timestamp: { $gte: today.toISOString() }
-        });
-        
-        // API key users count
-        const apikeyUsers = await apiKeysCollection.countDocuments();
-        
-        // API key usage count
-        const apiKeys = await apiKeysCollection.find().toArray();
-        const apikeyUsage = apiKeys.reduce((total, key) => total + (key.usageCount || 0), 0);
-        
-        res.json({
-            totalUsers,
-            totalChecks,
-            todayActiveUsers,
-            todayChecks,
-            apikeyUsers,
-            apikeyUsage
-        });
-    } catch (err) {
-        console.error('Error fetching dashboard stats:', err);
-        res.status(500).json({ error: 'Server error' });
-    }
+// Catch Uncaught Errors
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
 });
 
-// Admin - Recent checks
-app.get('/admin/recent-checks', tokenAuth, async (req, res) => {
-    try {
-        const recentChecks = await usageCollection.find()
-            .sort({ timestamp: -1 })
-            .limit(10)
-            .toArray();
-            
-        res.json(recentChecks);
-    } catch (err) {
-        console.error('Error fetching recent checks:', err);
-        res.status(500).json({ error: 'Server error' });
-    }
-});
+// Generate random verification code
+function generateVerificationCode() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
-// Admin - Check history with pagination
-app.get('/admin/check-history', tokenAuth, async (req, res) => {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const skip = (page - 1) * limit;
+// Generate API key
+function generateApiKey() {
+    return crypto.randomBytes(32).toString('hex');
+}
+
+// Middleware to validate API key
+async function validateApiKey(req, res, next) {
+    const apiKey = req.headers['x-api-key'];
+    
+    if (!apiKey) {
+        return res.status(401).json({ error: 'API key is required' });
+    }
     
     try {
-        const total = await usageCollection.countDocuments();
+        const apiKeyDoc = await apiKeysCollection.findOne({ key: apiKey });
         
-        const checks = await usageCollection.find()
-            .sort({ timestamp: -1 })
-            .skip(skip)
-            .limit(limit)
-            .toArray();
-            
-        res.json({
-            checks,
-            total,
-            page,
-            totalPages: Math.ceil(total / limit)
-        });
-    } catch (err) {
-        console.error('Error fetching check history:', err);
-        res.status(500).json({ error: 'Server error' });
-    }
-});
-
-// Admin - WhatsApp status
-app.get('/admin/whatsapp-status', tokenAuth, async (req, res) => {
-    try {
-        // Simple binary status: either connected or not
-        const isConnected = client && client.info;
-        
-        // Return simple status
-        res.json({ 
-            state: isConnected ? 'CONNECTED' : 'DISCONNECTED',
-            message: isConnected ? 'WhatsApp connected' : 'WhatsApp disconnected',
-            qr: global.latestQR // Include QR code if available
-        });
-    } catch (err) {
-        console.error('Error checking WhatsApp status:', err);
-        res.status(200).json({ 
-            state: 'DISCONNECTED',
-            message: 'WhatsApp disconnected'
-        });
-    }
-});
-
-// Token validation endpoint for admin login page
-app.get('/admin/validate-token', (req, res) => {
-    const token = req.query.token;
-    
-    if (!token || !validateAdminToken(token)) {
-        return res.status(401).send('Invalid token');
-    }
-    
-    res.status(200).send('Valid token');
-});
-
-// Admin - Get admin account info
-app.get('/admin/account-info', tokenAuth, async (req, res) => {
-    try {
-        const adminUser = await adminCollection.findOne({});
-        
-        if (!adminUser) {
-            return res.status(404).json({ error: 'Admin user not found' });
+        if (!apiKeyDoc) {
+            return res.status(401).json({ error: 'Invalid API key' });
         }
         
-        res.json({
-            username: adminUser.username
-        });
+        if (apiKeyDoc.disabled) {
+            return res.status(403).json({ error: 'API key is disabled' });
+        }
+        
+        // Update usage count
+        await apiKeysCollection.updateOne(
+            { key: apiKey },
+            { 
+                $inc: { usageCount: 1 },
+                $set: { lastUsed: new Date() }
+            }
+        );
+        
+        req.apiKey = apiKeyDoc;
+        next();
     } catch (err) {
-        console.error('Error fetching admin info:', err);
+        console.error('Error validating API key:', err);
         res.status(500).json({ error: 'Server error' });
     }
-});
+}
 
-// Admin - Update admin credentials
-app.post('/admin/update-credentials', tokenAuth, async (req, res) => {
-    const { currentPassword, newUsername, newPassword } = req.body;
+// API - Register and get verification code
+app.post('/api/register', async (req, res) => {
+    const { phoneNumber, telegramId } = req.body;
     
-    if (!currentPassword) {
-        return res.status(400).json({ error: 'Current password is required' });
+    if (!phoneNumber) {
+        return res.status(400).json({ error: 'Phone number is required' });
     }
     
-    if (!newUsername) {
-        return res.status(400).json({ error: 'Username cannot be empty' });
+    const normalizedPhone = normalizePhoneNumber(phoneNumber);
+    if (!normalizedPhone) {
+        return res.status(400).json({ error: 'Invalid phone number format' });
     }
     
     try {
-        const adminUser = await adminCollection.findOne({});
-        
-        if (!adminUser) {
-            return res.status(404).json({ error: 'Admin user not found' });
+        // Check if phone is already registered
+        const existingUser = await apiKeysCollection.findOne({ phoneNumber: normalizedPhone });
+        if (existingUser && existingUser.verified) {
+            return res.status(400).json({ error: 'Phone number already registered', apiKey: existingUser.key });
         }
         
-        const passwordMatch = await bcrypt.compare(currentPassword, adminUser.password);
+        // Generate verification code
+        const code = generateVerificationCode();
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 1); // Code expires in 1 hour
         
-        if (!passwordMatch) {
-            return res.status(401).json({ error: 'Current password is incorrect' });
-        }
-        
-        const updateData = { username: newUsername };
-        
-        if (newPassword) {
-            const hashedPassword = await bcrypt.hash(newPassword, 10);
-            updateData.password = hashedPassword;
-        }
-        
-        await adminCollection.updateOne({}, { $set: updateData });
-        
-        res.json({ 
-            success: true, 
-            message: 'Admin credentials updated successfully' 
-        });
-    } catch (err) {
-        console.error('Error updating admin credentials:', err);
-        res.status(500).json({ error: 'Server error' });
-    }
-});
-
-// API endpoint for sending broadcast messages
-app.post('/broadcast', tokenAuth, async (req, res) => {
-    const { message } = req.body;
-    
-    if (!message) {
-        return res.status(400).json({ error: 'Message is required' });
-    }
-    
-    try {
-        // Get all active users
-        const users = await usersCollection.find({}).toArray();
-        let sentCount = 0;
-        
-        // Send message to each user
-        for (const user of users) {
-            if (user.chatId) {
-                try {
-                    await bot.sendMessage(user.chatId, message);
-                    sentCount++;
-                } catch (err) {
-                    console.error(`Failed to send message to ${user.chatId}:`, err);
+        // Save the verification code
+        await verificationCodesCollection.updateOne(
+            { phoneNumber: normalizedPhone },
+            { 
+                $set: { 
+                    code,
+                    telegramId,
+                    expiresAt
                 }
+            },
+            { upsert: true }
+        );
+        
+        // If Telegram ID is provided, try to send the code via Telegram
+        if (telegramId) {
+            try {
+                const user = await usersCollection.findOne({ userId: telegramId });
+                if (user && user.chatId) {
+                    bot.sendMessage(
+                        user.chatId,
+                        `✅ Your API verification code is: *${code}*\n\nThis code will expire in 1 hour.`,
+                        { parse_mode: 'Markdown' }
+                    );
+                }
+            } catch (telegramErr) {
+                console.error('Error sending verification via Telegram:', telegramErr);
+                // Continue with the API response even if Telegram message fails
             }
         }
         
-        res.send(`Broadcast sent to ${sentCount} users.`);
+        res.json({ 
+            message: 'Verification code generated',
+            code: code, // Include code in response since we're not using WhatsApp
+            expires: expiresAt
+        });
     } catch (err) {
-        console.error('Error sending broadcast:', err);
+        console.error('Error during registration:', err);
         res.status(500).json({ error: 'Server error' });
     }
 });
 
-// 404 Error Handling - This must be after all other routes
-app.use((req, res) => {
-    res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
+// API - Verify phone and issue API key
+app.post('/api/verify', async (req, res) => {
+    const { phoneNumber, code } = req.body;
+    
+    if (!phoneNumber || !code) {
+        return res.status(400).json({ error: 'Phone number and verification code are required' });
+    }
+    
+    const normalizedPhone = normalizePhoneNumber(phoneNumber);
+    if (!normalizedPhone) {
+        return res.status(400).json({ error: 'Invalid phone number format' });
+    }
+    
+    try {
+        // Find verification code
+        const verificationRecord = await verificationCodesCollection.findOne({ 
+            phoneNumber: normalizedPhone, 
+            code 
+        });
+        
+        if (!verificationRecord) {
+            return res.status(400).json({ error: 'Invalid verification code' });
+        }
+        
+        if (new Date() > new Date(verificationRecord.expiresAt)) {
+            return res.status(400).json({ error: 'Verification code has expired' });
+        }
+        
+        // Generate API key
+        const apiKey = generateApiKey();
+        
+        // Store API key
+        await apiKeysCollection.updateOne(
+            { phoneNumber: normalizedPhone },
+            { 
+                $set: { 
+                    key: apiKey,
+                    telegramId: verificationRecord.telegramId,
+                    verified: true,
+                    createdAt: new Date(),
+                    lastUsed: new Date(),
+                    usageCount: 0,
+                    disabled: false
+                }
+            },
+            { upsert: true }
+        );
+        
+        // Delete verification code
+        await verificationCodesCollection.deleteOne({ phoneNumber: normalizedPhone });
+        
+        res.json({ 
+            message: 'Phone verified successfully',
+            apiKey
+        });
+    } catch (err) {
+        console.error('Error during verification:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
 });
+
+// API - Check phone number with API key
+app.post('/api/check', validateApiKey, async (req, res) => {
+    const { numbers } = req.body;
+    
+    if (!numbers || !Array.isArray(numbers) || numbers.length === 0) {
+        return res.status(400).json({ error: 'Please provide an array of phone numbers' });
+    }
+    
+    if (numbers.length > 10) {
+        return res.status(400).json({ error: 'Maximum 10 numbers per request' });
+    }
+    
+    try {
+        // Normalize phone numbers
+        const validNumbers = numbers.map(normalizePhoneNumber).filter(Boolean);
+        
+        if (validNumbers.length === 0) {
+            return res.status(400).json({ error: 'No valid US/Canada phone numbers provided' });
+        }
+        
+        // Check numbers on WhatsApp
+        const results = await checkNumbersOnWhatsApp(validNumbers);
+        
+        // Log usage
+        const timestamp = new Date().toISOString();
+        const records = validNumbers.map((number, i) => ({
+            userId: req.apiKey.telegramId || 'api',
+            username: req.apiKey.phoneNumber,
+            timestamp,
+            number,
+            result: results[i],
+            apiKey: req.apiKey.key
+        }));
+        
+        await usageCollection.insertMany(records);
+        
+        // Format response
+        const response = validNumbers.map((number, i) => {
+            const isRegistered = results[i].includes('✅');
+            return {
+                number,
+                registered: isRegistered,
+                status: isRegistered ? 'registered' : 'not_registered'
+            };
+        });
+        
+        res.json({
+            success: true,
+            results: response
+        });
+    } catch (err) {
+        console.error('Error checking numbers:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// API - Get API key usage stats
+app.get('/api/stats', validateApiKey, async (req, res) => {
+    try {
+        const apiKey = req.apiKey.key;
+        
+        // Get usage stats
+        const totalChecks = await usageCollection.countDocuments({ apiKey });
+        const registeredCount = await usageCollection.countDocuments({ 
+            apiKey, 
+            result: /✅/ 
+        });
+        
+        // Get last 10 checks
+        const recentChecks = await usageCollection.find({ apiKey })
+            .sort({ timestamp: -1 })
+            .limit(10)
+            .toArray();
+        
+        // Format recent checks
+        const recent = recentChecks.map(check => ({
+            number: check.number,
+            result: check.result.includes('✅') ? 'registered' : 'not_registered',
+            timestamp: check.timestamp
+        }));
+        
+        res.json({
+            success: true,
+            stats: {
+                totalChecks,
+                registeredCount,
+                notRegisteredCount: totalChecks - registeredCount,
+                registeredPercentage: totalChecks ? ((registeredCount / totalChecks) * 100).toFixed(2) : 0,
+                recentChecks: recent
+            }
+        });
+    } catch (err) {
+        console.error('Error fetching API key stats:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Admin - List all API keys
+app.get('/admin/api-keys', tokenAuth, async (req, res) => {
+    try {
+        const apiKeys = await apiKeysCollection.find().toArray();
+        
+        // Format API keys for display
+        const formattedKeys = apiKeys.map(key => ({
+            phoneNumber: key.phoneNumber,
+            key: key.key,
+            telegramId: key.telegramId,
+            createdAt: key.createdAt,
+            lastUsed: key.lastUsed,
+            usageCount: key.usageCount,
+            disabled: key.disabled
+        }));
+        
+        res.json(formattedKeys);
+    } catch (err) {
+        console.error('Error fetching API keys:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Admin - Enable/disable API key
+app.post('/admin/toggle-api-key', tokenAuth, async (req, res) => {
+    const { key, disabled } = req.body;
+    
+    if (!key) {
+        return res.status(400).json({ error: 'API key is required' });
+    }
+    
+    try {
+        const result = await apiKeysCollection.updateOne(
+            { key },
+            { $set: { disabled: !!disabled } }
+        );
+        
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ error: 'API key not found' });
+        }
+        
+        res.json({ 
+            success: true, 
+            message: `API key ${disabled ? 'disabled' : 'enabled'} successfully`
+        });
+    } catch (err) {
+        console.error('Error toggling API key:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Catch Uncaught Errors
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+});
+
+// Generate random verification code
+function generateVerificationCode() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// Generate API key
+function generateApiKey() {
+    return crypto.randomBytes(32).toString('hex');
+}
+
+// Middleware to validate API key
+async function validateApiKey(req, res, next) {
+    const apiKey = req.headers['x-api-key'];
+    
+    if (!apiKey) {
+        return res.status(401).json({ error: 'API key is required' });
+    }
+    
+    try {
+        const apiKeyDoc = await apiKeysCollection.findOne({ key: apiKey });
+        
+        if (!apiKeyDoc) {
+            return res.status(401).json({ error: 'Invalid API key' });
+        }
+        
+        if (apiKeyDoc.disabled) {
+            return res.status(403).json({ error: 'API key is disabled' });
+        }
+        
+        // Update usage count
+        await apiKeysCollection.updateOne(
+            { key: apiKey },
+            { 
+                $inc: { usageCount: 1 },
+                $set: { lastUsed: new Date() }
+            }
+        );
+        
+        req.apiKey = apiKeyDoc;
+        next();
+    } catch (err) {
+        console.error('Error validating API key:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+}
+
+// API - Register and get verification code
+app.post('/api/register', async (req, res) => {
+    const { phoneNumber, telegramId } = req.body;
+    
+    if (!phoneNumber) {
+        return res.status(400).json({ error: 'Phone number is required' });
+    }
+    
+    const normalizedPhone = normalizePhoneNumber(phoneNumber);
+    if (!normalizedPhone) {
+        return res.status(400).json({ error: 'Invalid phone number format' });
+    }
+    
+    try {
+        // Check if phone is already registered
+        const existingUser = await apiKeysCollection.findOne({ phoneNumber: normalizedPhone });
+        if (existingUser && existingUser.verified) {
+            return res.status(400).json({ error: 'Phone number already registered', apiKey: existingUser.key });
+        }
+        
+        // Generate verification code
+        const code = generateVerificationCode();
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 1); // Code expires in 1 hour
+        
+        // Save the verification code
+        await verificationCodesCollection.updateOne(
+            { phoneNumber: normalizedPhone },
+            { 
+                $set: { 
+                    code,
+                    telegramId,
+                    expiresAt
+                }
+            },
+            { upsert: true }
+        );
+        
+        // If Telegram ID is provided, try to send the code via Telegram
+        if (telegramId) {
+            try {
+                const user = await usersCollection.findOne({ userId: telegramId });
+                if (user && user.chatId) {
+                    bot.sendMessage(
+                        user.chatId,
+                        `✅ Your API verification code is: *${code}*\n\nThis code will expire in 1 hour.`,
+                        { parse_mode: 'Markdown' }
+                    );
+                }
+            } catch (telegramErr) {
+                console.error('Error sending verification via Telegram:', telegramErr);
+                // Continue with the API response even if Telegram message fails
+            }
+        }
+        
+        res.json({ 
+            message: 'Verification code generated',
+            code: code, // Include code in response since we're not using WhatsApp
+            expires: expiresAt
+        });
+    } catch (err) {
+        console.error('Error during registration:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// API - Verify phone and issue API key
+app.post('/api/verify', async (req, res) => {
+    const { phoneNumber, code } = req.body;
+    
+    if (!phoneNumber || !code) {
+        return res.status(400).json({ error: 'Phone number and verification code are required' });
+    }
+    
+    const normalizedPhone = normalizePhoneNumber(phoneNumber);
+    if (!normalizedPhone) {
+        return res.status(400).json({ error: 'Invalid phone number format' });
+    }
+    
+    try {
+        // Find verification code
+        const verificationRecord = await verificationCodesCollection.findOne({ 
+            phoneNumber: normalizedPhone, 
+            code 
+        });
+        
+        if (!verificationRecord) {
+            return res.status(400).json({ error: 'Invalid verification code' });
+        }
+        
+        if (new Date() > new Date(verificationRecord.expiresAt)) {
+            return res.status(400).json({ error: 'Verification code has expired' });
+        }
+        
+        // Generate API key
+        const apiKey = generateApiKey();
+        
+        // Store API key
+        await apiKeysCollection.updateOne(
+            { phoneNumber: normalizedPhone },
+            { 
+                $set: { 
+                    key: apiKey,
+                    telegramId: verificationRecord.telegramId,
+                    verified: true,
+                    createdAt: new Date(),
+                    lastUsed: new Date(),
+                    usageCount: 0,
+                    disabled: false
+                }
+            },
+            { upsert: true }
+        );
+        
+        // Delete verification code
+        await verificationCodesCollection.deleteOne({ phoneNumber: normalizedPhone });
+        
+        res.json({ 
+            message: 'Phone verified successfully',
+            apiKey
+        });
+    } catch (err) {
+        console.error('Error during verification:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// API - Check phone number with API key
+app.post('/api/check', validateApiKey, async (req, res) => {
+    const { numbers } = req.body;
+    
+    if (!numbers || !Array.isArray(numbers) || numbers.length === 0) {
+        return res.status(400).json({ error: 'Please provide an array of phone numbers' });
+    }
+    
+    if (numbers.length > 10) {
+        return res.status(400).json({ error: 'Maximum 10 numbers per request' });
+    }
+    
+    try {
+        // Normalize phone numbers
+        const validNumbers = numbers.map(normalizePhoneNumber).filter(Boolean);
+        
+        if (validNumbers.length === 0) {
+            return res.status(400).json({ error: 'No valid US/Canada phone numbers provided' });
+        }
+        
+        // Check numbers on WhatsApp
+        const results = await checkNumbersOnWhatsApp(validNumbers);
+        
+        // Log usage
+        const timestamp = new Date().toISOString();
+        const records = validNumbers.map((number, i) => ({
+            userId: req.apiKey.telegramId || 'api',
+            username: req.apiKey.phoneNumber,
+            timestamp,
+            number,
+            result: results[i],
+            apiKey: req.apiKey.key
+        }));
+        
+        await usageCollection.insertMany(records);
+        
+        // Format response
+        const response = validNumbers.map((number, i) => {
+            const isRegistered = results[i].includes('✅');
+            return {
+                number,
+                registered: isRegistered,
+                status: isRegistered ? 'registered' : 'not_registered'
+            };
+        });
+        
+        res.json({
+            success: true,
+            results: response
+        });
+    } catch (err) {
+        console.error('Error checking numbers:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// API - Get API key usage stats
+app.get('/api/stats', validateApiKey, async (req, res) => {
+    try {
+        const apiKey = req.apiKey.key;
+        
+        // Get usage stats
+        const totalChecks = await usageCollection.countDocuments({ apiKey });
+        const registeredCount = await usageCollection.countDocuments({ 
+            apiKey, 
+            result: /✅/ 
+        });
+        
+        // Get last 10 checks
+        const recentChecks = await usageCollection.find({ apiKey })
+            .sort({ timestamp: -1 })
+            .limit(10)
+            .toArray();
+        
+        // Format recent checks
+        const recent = recentChecks.map(check => ({
+            number: check.number,
+            result: check.result.includes('✅') ? 'registered' : 'not_registered',
+            timestamp: check.timestamp
+        }));
+        
+        res.json({
+            success: true,
+            stats: {
+                totalChecks,
+                registeredCount,
+                notRegisteredCount: totalChecks - registeredCount,
+                registeredPercentage: totalChecks ? ((registeredCount / totalChecks) * 100).toFixed(2) : 0,
+                recentChecks: recent
+            }
+        });
+    } catch (err) {
+        console.error('Error fetching API key stats:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Admin - List all API keys
+app.get('/admin/api-keys', tokenAuth, async (req, res) => {
+    try {
+        const apiKeys = await apiKeysCollection.find().toArray();
+        
+        // Format API keys for display
+        const formattedKeys = apiKeys.map(key => ({
+            phoneNumber: key.phoneNumber,
+            key: key.key,
+            telegramId: key.telegramId,
+            createdAt: key.createdAt,
+            lastUsed: key.lastUsed,
+            usageCount: key.usageCount,
+            disabled: key.disabled
+        }));
+        
+        res.json(formattedKeys);
+    } catch (err) {
+        console.error('Error fetching API keys:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Admin - Enable/disable API key
+app.post('/admin/toggle-api-key', tokenAuth, async (req, res) => {
+    const { key, disabled } = req.body;
+    
+    if (!key) {
+        return res.status(400).json({ error: 'API key is required' });
+    }
+    
+    try {
+        const result = await apiKeysCollection.updateOne(
+            { key },
+            { $set: { disabled: !!disabled } }
+        );
+        
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ error: 'API key not found' });
+        }
+        
+        res.json({ 
+            success: true, 
+            message: `API key ${disabled ? 'disabled' : 'enabled'} successfully`
+        });
+    } catch (err) {
+        console.error('Error toggling API key:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Catch Uncaught Errors
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+});
+
+// Generate random verification code
+function generateVerificationCode() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// Generate API key
+function generateApiKey() {
+    return crypto.randomBytes(32).toString('hex');
+}
+
+// Middleware to validate API key
+async function validateApiKey(req, res, next) {
+    const apiKey = req.headers['x-api-key'];
+    
+    if (!apiKey) {
+        return res.status(401).json({ error: 'API key is required' });
+    }
+    
+    try {
+        const apiKeyDoc = await apiKeysCollection.findOne({ key: apiKey });
+        
+        if (!apiKeyDoc) {
+            return res.status(401).json({ error: 'Invalid API key' });
+        }
+        
+        if (apiKeyDoc.disabled) {
+            return res.status(403).json({ error: 'API key is disabled' });
+        }
+        
+        // Update usage count
+        await apiKeysCollection.updateOne(
+            { key: apiKey },
+            { 
+                $inc: { usageCount: 1 },
+                $set: { lastUsed: new Date() }
+            }
+        );
+        
+        req.apiKey = apiKeyDoc;
+        next();
+    } catch (err) {
+        console.error('Error validating API key:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+}
+
+// API - Register and get verification code
+app.post('/api/register', async (req, res) => {
+    const { phoneNumber, telegramId } = req.body;
+    
+    if (!phoneNumber) {
+        return res.status(400).json({ error: 'Phone number is required' });
+    }
+    
+    const normalizedPhone = normalizePhoneNumber(phoneNumber);
+    if (!normalizedPhone) {
+        return res.status(400).json({ error: 'Invalid phone number format' });
+    }
+    
+    try {
+        // Check if phone is already registered
+        const existingUser = await apiKeysCollection.findOne({ phoneNumber: normalizedPhone });
+        if (existingUser && existingUser.verified) {
+            return res.status(400).json({ error: 'Phone number already registered', apiKey: existingUser.key });
+        }
+        
+        // Generate verification code
+        const code = generateVerificationCode();
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 1); // Code expires in 1 hour
+        
+        // Save the verification code
+        await verificationCodesCollection.updateOne(
+            { phoneNumber: normalizedPhone },
+            { 
+                $set: { 
+                    code,
+                    telegramId,
+                    expiresAt
+                }
+            },
+            { upsert: true }
+        );
+        
+        // If Telegram ID is provided, try to send the code via Telegram
+        if (telegramId) {
+            try {
+                const user = await usersCollection.findOne({ userId: telegramId });
+                if (user && user.chatId) {
+                    bot.sendMessage(
+                        user.chatId,
+                        `✅ Your API verification code is: *${code}*\n\nThis code will expire in 1 hour.`,
+                        { parse_mode: 'Markdown' }
+                    );
+                }
+            } catch (telegramErr) {
+                console.error('Error sending verification via Telegram:', telegramErr);
+                // Continue with the API response even if Telegram message fails
+            }
+        }
+        
+        res.json({ 
+            message: 'Verification code generated',
+            code: code, // Include code in response since we're not using WhatsApp
+            expires: expiresAt
+        });
+    } catch (err) {
+        console.error('Error during registration:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// API - Verify phone and issue API key
+app.post('/api/verify', async (req, res) => {
+    const { phoneNumber, code } = req.body;
+    
+    if (!phoneNumber || !code) {
+        return res.status(400).json({ error: 'Phone number and verification code are required' });
+    }
+    
+    const normalizedPhone = normalizePhoneNumber(phoneNumber);
+    if (!normalizedPhone) {
+        return res.status(400).json({ error: 'Invalid phone number format' });
+    }
+    
+    try {
+        // Find verification code
+        const verificationRecord = await verificationCodesCollection.findOne({ 
+            phoneNumber: normalizedPhone, 
+            code 
+        });
+        
+        if (!verificationRecord) {
+            return res.status(400).json({ error: 'Invalid verification code' });
+        }
+        
+        if (new Date() > new Date(verificationRecord.expiresAt)) {
+            return res.status(400).json({ error: 'Verification code has expired' });
+        }
+        
+        // Generate API key
+        const apiKey = generateApiKey();
+        
+        // Store API key
+        await apiKeysCollection.updateOne(
+            { phoneNumber: normalizedPhone },
+            { 
+                $set: { 
+                    key: apiKey,
+                    telegramId: verificationRecord.telegramId,
+                    verified: true,
+                    createdAt: new Date(),
+                    lastUsed: new Date(),
+                    usageCount: 0,
+                    disabled: false
+                }
+            },
+            { upsert: true }
+        );
+        
+        // Delete verification code
+        await verificationCodesCollection.deleteOne({ phoneNumber: normalizedPhone });
+        
+        res.json({ 
+            message: 'Phone verified successfully',
+            apiKey
+        });
+    } catch (err) {
+        console.error('Error during verification:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// API - Check phone number with API key
+app.post('/api/check', validateApiKey, async (req, res) => {
+    const { numbers } = req.body;
+    
+    if (!numbers || !Array.isArray(numbers) || numbers.length === 0) {
+        return res.status(400).json({ error: 'Please provide an array of phone numbers' });
+    }
+    
+    if (numbers.length > 10) {
+        return res.status(400).json({ error: 'Maximum 10 numbers per request' });
+    }
+    
+    try {
+        // Normalize phone numbers
+        const validNumbers = numbers.map(normalizePhoneNumber).filter(Boolean);
+        
+        if (validNumbers.length === 0) {
+            return res.status(400).json({ error: 'No valid US/Canada phone numbers provided' });
+        }
+        
+        // Check numbers on WhatsApp
+        const results = await checkNumbersOnWhatsApp(validNumbers);
+        
+        // Log usage
+        const timestamp = new Date().toISOString();
+        const records = validNumbers.map((number, i) => ({
+            userId: req.apiKey.telegramId || 'api',
+            username: req.apiKey.phoneNumber,
+            timestamp,
+            number,
+            result: results[i],
+            apiKey: req.apiKey.key
+        }));
+        
+        await usageCollection.insertMany(records);
+        
+        // Format response
+        const response = validNumbers.map((number, i) => {
+            const isRegistered = results[i].includes('✅');
+            return {
+                number,
+                registered: isRegistered,
+                status: isRegistered ? 'registered' : 'not_registered'
+            };
+        });
+        
+        res.json({
+            success: true,
+            results: response
+        });
+    } catch (err) {
+        console.error('Error checking numbers:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// API - Get API key usage stats
+app.get('/api/stats', validateApiKey, async (req, res) => {
+    try {
+        const apiKey = req.apiKey.key;
+        
+        // Get usage stats
+        const totalChecks = await usageCollection.countDocuments({ apiKey });
+        const registeredCount = await usageCollection.countDocuments({ 
+            apiKey, 
+            result: /✅/ 
+        });
+        
+        // Get last 10 checks
+        const recentChecks = await usageCollection.find({ apiKey })
+            .sort({ timestamp: -1 })
+            .limit(10)
+            .toArray();
+        
+        // Format recent checks
+        const recent = recentChecks.map(check => ({
+            number: check.number,
+            result: check.result.includes('✅') ? 'registered' : 'not_registered',
+            timestamp: check.timestamp
+        }));
+        
+        res.json({
+            success: true,
+            stats: {
+                totalChecks,
+                registeredCount,
+                notRegisteredCount: totalChecks - registeredCount,
+                registeredPercentage: totalChecks ? ((registeredCount / totalChecks) * 100).toFixed(2) : 0,
+                recentChecks: recent
+            }
+        });
+    } catch (err) {
+        console.error('Error fetching API key stats:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Admin - List all API keys
+app.get('/admin/api-keys', tokenAuth, async (req, res) => {
+    try {
+        const apiKeys = await apiKeysCollection.find().toArray();
+        
+        // Format API keys for display
+        const formattedKeys = apiKeys.map(key => ({
+            phoneNumber: key.phoneNumber,
+            key: key.key,
+            telegramId: key.telegramId,
+            createdAt: key.createdAt,
+            lastUsed: key.lastUsed,
+            usageCount: key.usageCount,
+            disabled: key.disabled
+        }));
+        
+        res.json(formattedKeys);
+    } catch (err) {
+        console.error('Error fetching API keys:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Admin - Enable/disable API key
+app.post('/admin/toggle-api-key', tokenAuth, async (req, res) => {
+    const { key, disabled } = req.body;
+    
+    if (!key) {
+        return res.status(400).json({ error: 'API key is required' });
+    }
+    
+    try {
+        const result = await apiKeysCollection.updateOne(
+            { key },
+            { $set: { disabled: !!disabled } }
+        );
+        
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ error: 'API key not found' });
+        }
+        
+        res.json({ 
+            success: true, 
+            message: `API key ${disabled ? 'disabled' : 'enabled'} successfully`
+        });
+    } catch (err) {
+        console.error('Error toggling API key:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Catch Uncaught Errors
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+});
+
+// Generate random verification code
+function generateVerificationCode() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// Generate API key
+function generateApiKey() {
+    return crypto.randomBytes(32).toString('hex');
+}
+
+// Middleware to validate API key
+async function validateApiKey(req, res, next) {
+    const apiKey = req.headers['x-api-key'];
+    
+    if (!apiKey) {
+        return res.status(401).json({ error: 'API key is required' });
+    }
+    
+    try {
+        const apiKeyDoc = await apiKeysCollection.findOne({ key: apiKey });
+        
+        if (!apiKeyDoc) {
+            return res.status(401).json({ error: 'Invalid API key' });
+        }
+        
+        if (apiKeyDoc.disabled) {
+            return res.status(403).json({ error: 'API key is disabled' });
+        }
+        
+        // Update usage count
+        await apiKeysCollection.updateOne(
+            { key: apiKey },
+            { 
+                $inc: { usageCount: 1 },
+                $set: { lastUsed: new Date() }
+            }
+        );
+        
+        req.apiKey = apiKeyDoc;
+        next();
+    } catch (err) {
+        console.error('Error validating API key:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+}
+
+// API - Register and get verification code
+app.post('/api/register', async (req, res) => {
+    const { phoneNumber, telegramId } = req.body;
+    
+    if (!phoneNumber) {
+        return res.status(400).json({ error: 'Phone number is required' });
+    }
+    
+    const normalizedPhone = normalizePhoneNumber(phoneNumber);
+    if (!normalizedPhone) {
+        return res.status(400).json({ error: 'Invalid phone number format' });
+    }
+    
+    try {
+        // Check if phone is already registered
+        const existingUser = await apiKeysCollection.findOne({ phoneNumber: normalizedPhone });
+        if (existingUser && existingUser.verified) {
+            return res.status(400).json({ error: 'Phone number already registered', apiKey: existingUser.key });
+        }
+        
+        // Generate verification code
+        const code = generateVerificationCode();
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 1); // Code expires in 1 hour
+        
+        // Save the verification code
+        await verificationCodesCollection.updateOne(
+            { phoneNumber: normalizedPhone },
+            { 
+                $set: { 
+                    code,
+                    telegramId,
+                    expiresAt
+                }
+            },
+            { upsert: true }
+        );
+        
+        // If Telegram ID is provided, try to send the code via Telegram
+        if (telegramId) {
+            try {
+                const user = await usersCollection.findOne({ userId: telegramId });
+                if (user && user.chatId) {
+                    bot.sendMessage(
+                        user.chatId,
+                        `✅ Your API verification code is: *${code}*\n\nThis code will expire in 1 hour.`,
+                        { parse_mode: 'Markdown' }
+                    );
+                }
+            } catch (telegramErr) {
+                console.error('Error sending verification via Telegram:', telegramErr);
+                // Continue with the API response even if Telegram message fails
+            }
+        }
+        
+        res.json({ 
+            message: 'Verification code generated',
+            code: code, // Include code in response since we're not using WhatsApp
+            expires: expiresAt
+        });
+    } catch (err) {
+        console.error('Error during registration:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// API - Verify phone and issue API key
+app.post('/api/verify', async (req, res) => {
+    const { phoneNumber, code } = req.body;
+    
+    if (!phoneNumber || !code) {
+        return res.status(400).json({ error: 'Phone number and verification code are required' });
+    }
+    
+    const normalizedPhone = normalizePhoneNumber(phoneNumber);
+    if (!normalizedPhone) {
+        return res.status(400).json({ error: 'Invalid phone number format' });
+    }
+    
+    try {
+        // Find verification code
+        const verificationRecord = await verificationCodesCollection.findOne({ 
+            phoneNumber: normalizedPhone, 
+            code 
+        });
+        
+        if (!verificationRecord) {
+            return res.status(400).json({ error: 'Invalid verification code' });
+        }
+        
+        if (new Date() > new Date(verificationRecord.expiresAt)) {
+            return res.status(400).json({ error: 'Verification code has expired' });
+        }
+        
+        // Generate API key
+        const apiKey = generateApiKey();
+        
+        // Store API key
+        await apiKeysCollection.updateOne(
+            { phoneNumber: normalizedPhone },
+            { 
+                $set: { 
+                    key: apiKey,
+                    telegramId: verificationRecord.telegramId,
+                    verified: true,
+                    createdAt: new Date(),
+                    lastUsed: new Date(),
+                    usageCount: 0,
+                    disabled: false
+                }
+            },
+            { upsert: true }
+        );
+        
+        // Delete verification code
+        await verificationCodesCollection.deleteOne({ phoneNumber: normalizedPhone });
+        
+        res.json({ 
+            message: 'Phone verified successfully',
+            apiKey
+        });
+    } catch (err) {
+        console.error('Error during verification:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// API - Check phone number with API key
+app.post('/api/check', validateApiKey, async (req, res) => {
+    const { numbers } = req.body;
+    
+    if (!numbers || !Array.isArray(numbers) || numbers.length === 0) {
+        return res.status(400).json({ error: 'Please provide an array of phone numbers' });
+    }
+    
+    if (numbers.length > 10) {
+        return res.status(400).json({ error: 'Maximum 10 numbers per request' });
+    }
+    
+    try {
+        // Normalize phone numbers
+        const validNumbers = numbers.map(normalizePhoneNumber).filter(Boolean);
+        
+        if (validNumbers.length === 0) {
+            return res.status(400).json({ error: 'No valid US/Canada phone numbers provided' });
+        }
+        
+        // Check numbers on WhatsApp
+        const results = await checkNumbersOnWhatsApp(validNumbers);
+        
+        // Log usage
+        const timestamp = new Date().toISOString();
+        const records = validNumbers.map((number, i) => ({
+            userId: req.apiKey.telegramId || 'api',
+            username: req.apiKey.phoneNumber,
+            timestamp,
+            number,
+            result: results[i],
+            apiKey: req.apiKey.key
+        }));
+        
+        await usageCollection.insertMany(records);
+        
+        // Format response
+        const response = validNumbers.map((number, i) => {
+            const isRegistered = results[i].includes('✅');
+            return {
+                number,
+                registered: isRegistered,
+                status: isRegistered ? 'registered' : 'not_registered'
+            };
+        });
+        
+        res.json({
+            success: true,
+            results: response
+        });
+    } catch (err) {
+        console.error('Error checking numbers:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// API - Get API key usage stats
+app.get('/api/stats', validateApiKey, async (req, res) => {
+    try {
+        const apiKey = req.apiKey.key;
+        
+        // Get usage stats
+        const totalChecks = await usageCollection.countDocuments({ apiKey });
+        const registeredCount = await usageCollection.countDocuments({ 
+            apiKey, 
+            result: /✅/ 
+        });
+        
+        // Get last 10 checks
+        const recentChecks = await usageCollection.find({ apiKey })
+            .sort({ timestamp: -1 })
+            .limit(10)
+            .toArray();
+        
+        // Format recent checks
+        const recent = recentChecks.map(check => ({
+            number: check.number,
+            result: check.result.includes('✅') ? 'registered' : 'not_registered',
+            timestamp: check.timestamp
+        }));
+        
+        res.json({
+            success: true,
+            stats: {
+                totalChecks,
+                registeredCount,
+                notRegisteredCount: totalChecks - registeredCount,
+                registeredPercentage: totalChecks ? ((registeredCount / totalChecks) * 100).toFixed(2) : 0,
+                recentChecks: recent
+            }
+        });
+    } catch (err) {
+        console.error('Error fetching API key stats:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Admin - List all API keys
+app.get('/admin/api-keys', tokenAuth, async (req, res) => {
+    try {
+        const apiKeys = await apiKeysCollection.find().toArray();
+        
+        // Format API keys for display
+        const formattedKeys = apiKeys.map(key => ({
+            phoneNumber: key.phoneNumber,
+            key: key.key,
+            telegramId: key.telegramId,
+            createdAt: key.createdAt,
+            lastUsed: key.lastUsed,
+            usageCount: key.usageCount,
+            disabled: key.disabled
+        }));
+        
+        res.json(formattedKeys);
+    } catch (err) {
+        console.error('Error fetching API keys:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Admin - Enable/disable API key
+app.post('/admin/toggle-api-key', tokenAuth, async (req, res) => {
+    const { key, disabled } = req.body;
+    
+    if (!key) {
+        return res.status(400).json({ error: 'API key is required' });
+    }
+    
+    try {
+        const result = await apiKeysCollection.updateOne(
+            { key },
+            { $set: { disabled: !!disabled } }
+        );
+        
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ error: 'API key not found' });
+        }
+        
+        res.json({ 
+            success: true, 
+            message: `API key ${disabled ? 'disabled' : 'enabled'} successfully`
+        });
+    } catch (err) {
+        console.error('Error toggling API key:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Catch Uncaught Errors
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+});
+
+// Generate random verification code
+function generateVerificationCode() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// Generate API key
+function generateApiKey() {
+    return crypto.randomBytes(32).toString('hex');
+}
+
+// Middleware to validate API key
+async function validateApiKey(req, res, next) {
+    const apiKey = req.headers['x-api-key'];
+    
+    if (!apiKey) {
+        return res.status(401).json({ error: 'API key is required' });
+    }
+    
+    try {
+        const apiKeyDoc = await apiKeysCollection.findOne({ key: apiKey });
+        
+        if (!apiKeyDoc) {
+            return res.status(401).json({ error: 'Invalid API key' });
+        }
+        
+        if (apiKeyDoc.disabled) {
+            return res.status(403).json({ error: 'API key is disabled' });
+        }
+        
+        // Update usage count
+        await apiKeysCollection.updateOne(
+            { key: apiKey },
+            { 
+                $inc: { usageCount: 1 },
+                $set: { lastUsed: new Date() }
+            }
+        );
+        
+        req.apiKey = apiKeyDoc;
+        next();
+    } catch (err) {
+        console.error('Error validating API key:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+}
+
+// API - Register and get verification code
+app.post('/api/register', async (req, res) => {
+    const { phoneNumber, telegramId } = req.body;
+    
+    if (!phoneNumber) {
+        return res.status(400).json({ error: 'Phone number is required' });
+    }
+    
+    const normalizedPhone = normalizePhoneNumber(phoneNumber);
+    if (!normalizedPhone) {
+        return res.status(400).json({ error: 'Invalid phone number format' });
+    }
+    
+    try {
+        // Check if phone is already registered
+        const existingUser = await apiKeysCollection.findOne({ phoneNumber: normalizedPhone });
+        if (existingUser && existingUser.verified) {
+            return res.status(400).json({ error: 'Phone number already registered', apiKey: existingUser.key });
+        }
+        
+        // Generate verification code
+        const code = generateVerificationCode();
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 1); // Code expires in 1 hour
+        
+        // Save the verification code
+        await verificationCodesCollection.updateOne(
+            { phoneNumber: normalizedPhone },
+            { 
+                $set: { 
+                    code,
+                    telegramId,
+                    expiresAt
+                }
+            },
+            { upsert: true }
+        );
+        
+        // If Telegram ID is provided, try to send the code via Telegram
+        if (telegramId) {
+            try {
+                const user = await usersCollection.findOne({ userId: telegramId });
+                if (user && user.chatId) {
+                    bot.sendMessage(
+                        user.chatId,
+                        `✅ Your API verification code is: *${code}*\n\nThis code will expire in 1 hour.`,
+                        { parse_mode: 'Markdown' }
+                    );
+                }
+            } catch (telegramErr) {
+                console.error('Error sending verification via Telegram:', telegramErr);
+                // Continue with the API response even if Telegram message fails
+            }
+        }
+        
+        res.json({ 
+            message: 'Verification code generated',
+            code: code, // Include code in response since we're not using WhatsApp
+            expires: expiresAt
+        });
+    } catch (err) {
+        console.error('Error during registration:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// API - Verify phone and issue API key
+app.post('/api/verify', async (req, res) => {
+    const { phoneNumber, code } = req.body;
+    
+    if (!phoneNumber || !code) {
+        return res.status(400).json({ error: 'Phone number and verification code are required' });
+    }
+    
+    const normalizedPhone = normalizePhoneNumber(phoneNumber);
+    if (!normalizedPhone) {
+        return res.status(400).json({ error: 'Invalid phone number format' });
+    }
+    
+    try {
+        // Find verification code
+app.get('/api/stats', validateApiKey
