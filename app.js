@@ -702,9 +702,13 @@ function tokenAuth(req, res, next) {
 
 // Add this route before the /admin route
 app.post('/admin-login', bodyParser.json(), async (req, res) => {
-    const { username, password } = req.body;
-    
     try {
+        const { username, password } = req.body;
+        
+        if (!username || !password) {
+            return res.status(400).json({ success: false, error: 'Username and password are required' });
+        }
+        
         console.log(`Admin login attempt: username=${username}, password=${password ? "provided" : "missing"}`);
         
         // Check against hardcoded credentials first for simplicity
@@ -714,27 +718,36 @@ app.post('/admin-login', bodyParser.json(), async (req, res) => {
             ADMIN_TOKENS.set(token, { createdAt: Date.now() });
             
             // Return success with token
-            return res.json({ success: true, token });
+            return res.status(200).json({ success: true, token });
         }
         
         // Check credentials against MongoDB stored admin user
+        if (!adminCollection) {
+            console.error("MongoDB not connected or collections not initialized");
+            return res.status(500).json({ success: false, error: 'Database not available' });
+        }
+        
         const adminUser = await adminCollection.findOne({ username });
         console.log("DB admin lookup result:", adminUser ? "found" : "not found");
         
-        if (adminUser && await bcrypt.compare(password, adminUser.password)) {
-            console.log("Login successful using database credentials");
-            const token = generateToken();
-            ADMIN_TOKENS.set(token, { createdAt: Date.now() });
+        if (adminUser) {
+            const passwordMatch = await bcrypt.compare(password, adminUser.password);
             
-            // Return success with token
-            return res.json({ success: true, token });
-        } else {
-            console.log("Login failed - invalid credentials");
-            return res.status(401).json({ success: false, error: 'Invalid credentials' });
+            if (passwordMatch) {
+                console.log("Login successful using database credentials");
+                const token = generateToken();
+                ADMIN_TOKENS.set(token, { createdAt: Date.now() });
+                
+                // Return success with token
+                return res.status(200).json({ success: true, token });
+            }
         }
+        
+        console.log("Login failed - invalid credentials");
+        return res.status(401).json({ success: false, error: 'Invalid credentials' });
     } catch (err) {
         console.error('Login error:', err);
-        return res.status(500).json({ error: 'Server error' });
+        return res.status(500).json({ success: false, error: 'Server error. Please try again.' });
     }
 });
 
