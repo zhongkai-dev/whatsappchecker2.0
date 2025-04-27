@@ -303,7 +303,7 @@ bot.on('message', async (msg) => {
     if (text === '/apidocs') {
         const apiDocsMessage = `*WhatsApp Checker API Documentation*\n\n` +
             `Access our API docs at:\n` +
-            `http://192.168.102.35:3000/api-docs\n\n` +
+            `http://whatsappchecker2.up.railway.app/api-docs\n\n` +
             `The documentation includes details on:\n` +
             `- How to get an API key\n` +
             `- Available endpoints\n` +

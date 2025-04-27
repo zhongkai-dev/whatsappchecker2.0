@@ -515,6 +515,19 @@
             border: 1px solid #333;
         }
         
+        .pagination-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .pagination-info {
+            color: var(--light);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        
         .pagination {
             display: flex;
             justify-content: center;
@@ -544,6 +557,16 @@
             display: flex;
             align-items: center;
             gap: 0.25rem;
+        }
+        
+        .pagination-item.nav-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        
+        .pagination-item.nav-btn.active-nav {
+            color: var(--primary);
         }
 
         .pagination-item.active {
@@ -928,13 +951,17 @@
                             <span>Items per page:</span>
                             <select id="items-per-page" class="form-control">
                                 <option value="10">10</option>
+                                <option value="20" selected>20</option>
                                 <option value="30">30</option>
                                 <option value="50">50</option>
                                 <option value="100">100</option>
                             </select>
                         </div>
-                        <div class="pagination" id="check-history-pagination">
-                            <!-- Pagination will be generated here -->
+                        <div class="pagination-container">
+                            <div id="pagination-info" class="pagination-info"></div>
+                            <div class="pagination" id="check-history-pagination">
+                                <!-- Pagination will be generated here -->
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -1309,6 +1336,22 @@
                         checkHistoryBody.appendChild(row);
                     });
                     
+                    // Display pagination info
+                    const startItem = (currentPage - 1) * itemsPerPage + 1;
+                    const endItem = Math.min(currentPage * itemsPerPage, totalChecks);
+                    
+                    // Create pagination info element if it doesn't exist
+                    let paginationInfo = document.getElementById('pagination-info');
+                    if (!paginationInfo) {
+                        paginationInfo = document.createElement('div');
+                        paginationInfo.id = 'pagination-info';
+                        paginationInfo.className = 'pagination-info';
+                        checkHistoryPagination.parentNode.insertBefore(paginationInfo, checkHistoryPagination);
+                    }
+                    
+                    // Update pagination info
+                    paginationInfo.textContent = `Showing ${startItem}-${endItem} of ${totalChecks} entries`;
+                    
                     // Generate pagination
                     generatePagination(totalPages, page, checkHistoryPagination);
                     
@@ -1333,11 +1376,16 @@
                 prevItem.className = 'pagination-item nav-btn';
                 prevItem.innerHTML = '<i class="material-icons">chevron_left</i>';
                 prevItem.title = "Previous Page";
-                prevItem.addEventListener('click', () => {
-                    if (currentPage > 1) {
+                
+                if (currentPage > 1) {
+                    prevItem.addEventListener('click', () => {
                         loadCheckHistory(currentPage - 1);
-                    }
-                });
+                    });
+                    prevItem.classList.add('active-nav');
+                } else {
+                    prevItem.classList.add('disabled');
+                }
+                
                 paginationElement.appendChild(prevItem);
                 
                 // First page always
@@ -1375,11 +1423,16 @@
                 nextItem.className = 'pagination-item nav-btn';
                 nextItem.innerHTML = '<i class="material-icons">chevron_right</i>';
                 nextItem.title = "Next Page";
-                nextItem.addEventListener('click', () => {
-                    if (currentPage < totalPages) {
+                
+                if (currentPage < totalPages) {
+                    nextItem.addEventListener('click', () => {
                         loadCheckHistory(currentPage + 1);
-                    }
-                });
+                    });
+                    nextItem.classList.add('active-nav');
+                } else {
+                    nextItem.classList.add('disabled');
+                }
+                
                 paginationElement.appendChild(nextItem);
             }
             
