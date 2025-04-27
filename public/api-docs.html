@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Checker API Documentation</title>
+    <style>
+        :root {
+            --primary: #25D366;
+            --dark: #1a1a1a;
+            --light: #ffffff;
+            --gray: #242424;
+            --gray-light: #2a2a2a;
+            --font-mono: 'Courier New', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--dark);
+            color: var(--light);
+            font-family: 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Background pattern */
+        .bg-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(var(--gray-light) 1px, transparent 1px);
+            background-size: 20px 20px;
+            opacity: 0.08;
+            z-index: -1;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--gray-light);
+            padding-bottom: 1rem;
+        }
+
+        .header h1 {
+            color: var(--primary);
+            font-size: 2.5rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo svg {
+            width: 50px;
+            height: 50px;
+            fill: var(--primary);
+        }
+
+        .logo-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo-text span:first-child {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .logo-text span:last-child {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .main-navigation {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .main-navigation a {
+            color: var(--light);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .main-navigation a:hover {
+            background-color: var(--gray);
+        }
+
+        .main-navigation a.active {
+            background-color: var(--gray);
+            border-bottom: 2px solid var(--primary);
+        }
+
+        /* Introduction */
+        .intro {
+            background-color: var(--gray);
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            border-left: 4px solid var(--primary);
+        }
+
+        .intro h2 {
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .intro p {
+            margin-bottom: 1rem;
+        }
+
+        .intro-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: var(--dark);
+        }
+
+        .btn-secondary {
+            background-color: var(--gray-light);
+            color: var(--light);
+        }
+
+        /* API Sections */
+        .api-section {
+            background-color: var(--gray);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+
+        .api-section h2 {
+            color: var(--primary);
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #333;
+            padding-bottom: 0.5rem;
+        }
+
+        /* Endpoint */
+        .endpoint {
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px dashed #333;
+        }
+
+        .endpoint:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .endpoint-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .endpoint-method {
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-weight: bold;
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+        }
+
+        .method-post {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .method-get {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        .endpoint-path {
+            font-family: var(--font-mono);
+            font-size: 1.1rem;
+        }
+
+        .endpoint-description {
+            margin-bottom: 1rem;
+        }
+
+        .endpoint h3 {
+            margin: 1.5rem 0 0.5rem;
+            font-size: 1.1rem;
+            color: #ccc;
+        }
+
+        /* Code */
+        pre {
+            background-color: var(--dark);
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 0.5rem 0 1rem;
+            border: 1px solid var(--gray-light);
+        }
+
+        code {
+            font-family: var(--font-mono);
+            color: #e6e6e6;
+        }
+
+        .code-tabs {
+            display: flex;
+            background-color: var(--gray-light);
+            border-radius: 4px 4px 0 0;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .tab:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .tab.active {
+            background-color: var(--dark);
+            color: var(--primary);
+        }
+
+        .code-tab-content {
+            display: none;
+            margin-top: 0;
+        }
+
+        .code-tab-content.active {
+            display: block;
+        }
+
+        .important-note {
+            padding: 1rem;
+            background-color: rgba(255, 193, 7, 0.1);
+            border-left: 4px solid #FFC107;
+            margin: 1rem 0;
+        }
+
+        .important-note h4 {
+            color: #FFC107;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--gray-light);
+        }
+
+        th {
+            background-color: var(--gray-light);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--gray-light);
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .main-navigation {
+                flex-wrap: wrap;
+            }
+
+            .intro-buttons {
+                flex-direction: column;
+            }
+
+            .endpoint-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-pattern"></div>
+
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 2C6.5 2 2 6.5 2 12c0 2 .5 4 1.5 5.5L2 22l4.5-1.5C8 21.5 10 22 12 22c5.5 0 10-4.5 10-10S17.5 2 12 2zm0 18c-1.8 0-3.4-.4-4.9-1.2l-.3-.2-3.3 1 1-3.3-.2-.3c-.8-1.4-1.2-3-1.2-4.9 0-4.9 4-8.9 8.9-8.9s9 4 9 8.9-4 9-9 9zm5.3-6.5c-.3-.1-1.5-.8-1.8-.9-.3-.1-.4-.1-.6.1-.2.2-.6.9-.8 1-.2.2-.3.2-.6 0-.7-.3-1.4-.5-2-1.2-.4-.4-.6-.9-.7-1.1v-.1c.2-.2.4-.3.5-.6.2-.2.3-.3.4-.5v-.5c0-.2-.6-1.5-.8-2.1-.2-.6-.4-.5-.6-.5h-.5c-.2 0-.5.1-.7.3-.2.2-.9.9-.9 2.2 0 1.3 1 2.6 1.1 2.8.1.2 2 3.2 4.9 4.3 2.9 1.1 2.9.8 3.4.7.5-.1 1.5-.7 1.8-1.3.2-.6.2-1.2.2-1.3-.1-.1-.3-.2-.6-.3-.6-.5z"/>
+                </svg>
+                <div class="logo-text">
+                    <span>WhatsApp Checker</span>
+                    <span>API Documentation</span>
+                </div>
+            </div>
+            <nav class="main-navigation">
+                <a href="#introduction" class="active">Introduction</a>
+                <a href="#authentication">Authentication</a>
+                <a href="#endpoints">Endpoints</a>
+                <a href="#examples">Code Examples</a>
+            </nav>
+        </header>
+
+        <section id="introduction" class="intro">
+            <h2>Introduction</h2>
+            <p>The WhatsApp Checker API allows you to check if phone numbers are registered on WhatsApp. This documentation provides details about available endpoints, authentication, and usage guidelines.</p>
+            <p>To use this API, you need an API key that can be obtained through our Telegram bot or via the registration endpoint described below.</p>
+            <div class="intro-buttons">
+                <a href="https://t.me/your_bot_username" class="btn btn-primary">Get API Key via Telegram</a>
+                <a href="#registration" class="btn btn-secondary">Register via API</a>
+            </div>
+        </section>
+
+        <section id="authentication" class="api-section">
+            <h2>Authentication</h2>
+            <p>All API requests (except registration and verification) require an API key to be included in the request headers:</p>
+            <pre><code>x-api-key: your_api_key_here</code></pre>
+            <div class="important-note">
+                <h4>Important</h4>
+                <p>Keep your API key secure. Do not share it with others or expose it in client-side code.</p>
+            </div>
+        </section>
+
+        <section id="endpoints" class="api-section">
+            <h2>Endpoints</h2>
+            
+            <div id="registration" class="endpoint">
+                <div class="endpoint-header">
+                    <span class="endpoint-method method-post">POST</span>
+                    <span class="endpoint-path">/api/register</span>
+                </div>
+                <p class="endpoint-description">Register with your phone number to get a verification code.</p>
+                
+                <h3>Request Body</h3>
+                <pre><code>{
+  "phoneNumber": "+12025550108",
+  "telegramId": "1234567890" // Optional, if you want code sent to your Telegram
+}</code></pre>
+
+                <h3>Response</h3>
+                <pre><code>{
+  "message": "Verification code generated",
+  "code": "123456",
+  "expires": "2025-04-27T15:42:00.000Z"
+}</code></pre>
+            </div>
+            
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="endpoint-method method-post">POST</span>
+                    <span class="endpoint-path">/api/verify</span>
+                </div>
+                <p class="endpoint-description">Verify your phone number with the code received to get an API key.</p>
+                
+                <h3>Request Body</h3>
+                <pre><code>{
+  "phoneNumber": "+12025550108",
+  "code": "123456"
+}</code></pre>
+
+                <h3>Response</h3>
+                <pre><code>{
+  "message": "Phone verified successfully",
+  "apiKey": "your_api_key_here"
+}</code></pre>
+            </div>
+            
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="endpoint-method method-post">POST</span>
+                    <span class="endpoint-path">/api/check</span>
+                </div>
+                <p class="endpoint-description">Check if phone numbers are registered on WhatsApp.</p>
+                
+                <h3>Headers</h3>
+                <pre><code>x-api-key: your_api_key_here</code></pre>
+                
+                <h3>Request Body</h3>
+                <pre><code>{
+  "numbers": ["+12025550108", "+12025550109"]
+}</code></pre>
+
+                <h3>Response</h3>
+                <pre><code>{
+  "success": true,
+  "results": [
+    {
+      "number": "+12025550108",
+      "registered": true,
+      "status": "registered"
+    },
+    {
+      "number": "+12025550109",
+      "registered": false,
+      "status": "not_registered"
+    }
+  ]
+}</code></pre>
+
+                <div class="important-note">
+                    <h4>Limitations</h4>
+                    <p>Maximum 10 numbers per request.</p>
+                </div>
+            </div>
+            
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="endpoint-method method-get">GET</span>
+                    <span class="endpoint-path">/api/stats</span>
+                </div>
+                <p class="endpoint-description">Get usage statistics for your API key.</p>
+                
+                <h3>Headers</h3>
+                <pre><code>x-api-key: your_api_key_here</code></pre>
+
+                <h3>Response</h3>
+                <pre><code>{
+  "success": true,
+  "stats": {
+    "totalChecks": 100,
+    "registeredCount": 75,
+    "notRegisteredCount": 25,
+    "registeredPercentage": "75.00",
+    "recentChecks": [
+      {
+        "number": "+12025550108",
+        "result": "registered",
+        "timestamp": "2025-04-28T12:34:56.789Z"
+      },
+      // ... more checks
+    ]
+  }
+}</code></pre>
+            </div>
+        </section>
+
+        <section id="examples" class="api-section">
+            <h2>Code Examples</h2>
+            
+            <div class="code-tabs">
+                <div class="tab active" data-tab="nodejs">Node.js</div>
+                <div class="tab" data-tab="python">Python</div>
+                <div class="tab" data-tab="php">PHP</div>
+            </div>
+            
+            <div class="code-tab-content active" id="nodejs-content">
+                <pre><code>const axios = require('axios');
+
+// Step 1: Register your phone number
+async function registerPhone() {
+  try {
+    const response = await axios.post('http://192.168.102.35:3000/api/register', {
+      phoneNumber: '+12025550108',
+      telegramId: '1234567890' // Optional, if you want code sent to your Telegram
+    });
+    console.log('Verification code:', response.data.code);
+    console.log('Expires:', response.data.expires);
+    // Save the verification code to use in the next step
+  } catch (error) {
+    console.error('Error:', error.response?.data || error.message);
+  }
+}
+
+// Step 2: Verify your phone with the code
+async function verifyCode() {
+  try {
+    const response = await axios.post('http://192.168.102.35:3000/api/verify', {
+      phoneNumber: '+12025550108',
+      code: '123456' // The code you received from the registration response
+    });
+    console.log('Your API key:', response.data.apiKey);
+    // Save this API key securely
+  } catch (error) {
+    console.error('Error:', error.response?.data || error.message);
+  }
+}
+
+// Step 3: Use the API key to check phone numbers
+async function checkNumbers() {
+  try {
+    const response = await axios.post('http://192.168.102.35:3000/api/check', {
+      numbers: ['+12025550108', '+12025550109']
+    }, {
+      headers: {
+        'x-api-key': 'your_api_key_here'
+      }
+    });
+    
+    console.log(response.data);
+  } catch (error) {
+    console.error('Error:', error.response?.data || error.message);
+  }
+}</code></pre>
+            </div>
+            
+            <div class="code-tab-content" id="python-content">
+                <pre><code>import requests
+
+# Step 1: Register your phone number
+def register_phone():
+    url = 'http://192.168.102.35:3000/api/register'
+    payload = {
+        'phoneNumber': '+12025550108',
+        'telegramId': '1234567890'  # Optional
+    }
+    
+    response = requests.post(url, json=payload)
+    
+    if response.status_code == 200:
+        data = response.json()
+        print(f"Verification code: {data['code']}")
+        print(f"Expires: {data['expires']}")
+        # Save the verification code to use in the next step
+    else:
+        print(f"Error: {response.status_code}", response.text)
+
+# Step 2: Verify your phone with the code
+def verify_code():
+    url = 'http://192.168.102.35:3000/api/verify'
+    payload = {
+        'phoneNumber': '+12025550108',
+        'code': '123456'  # The code you received from registration
+    }
+    
+    response = requests.post(url, json=payload)
+    
+    if response.status_code == 200:
+        data = response.json()
+        api_key = data['apiKey']
+        print(f"Your API key: {api_key}")
+        # Save this API key securely
+    else:
+        print(f"Error: {response.status_code}", response.text)
+
+# Step 3: Use the API key to check phone numbers
+def check_numbers():
+    api_key = 'your_api_key_here'
+    url = 'http://192.168.102.35:3000/api/check'
+    
+    headers = {
+        'x-api-key': api_key
+    }
+    
+    payload = {
+        'numbers': ['+12025550108', '+12025550109']
+    }
+    
+    response = requests.post(url, json=payload, headers=headers)
+    
+    if response.status_code == 200:
+        print(response.json())
+    else:
+        print(f"Error: {response.status_code}", response.text)</code></pre>
+            </div>
+            
+            <div class="code-tab-content" id="php-content">
+                <pre><code>// Step 1: Register your phone number
+function registerPhone() {
+    $url = 'http://192.168.102.35:3000/api/register';
+    $data = [
+        'phoneNumber' => '+12025550108',
+        'telegramId' => '1234567890'  // Optional
+    ];
+
+    $curl = curl_init();
+    curl_setopt_array($curl, [
+        CURLOPT_URL => $url,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+        CURLOPT_POSTFIELDS => json_encode($data)
+    ]);
+
+    $response = curl_exec($curl);
+    $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+
+    if ($httpCode === 200) {
+        $result = json_decode($response, true);
+        echo "Verification code: " . $result['code'] . "\n";
+        echo "Expires: " . $result['expires'] . "\n";
+        // Save the verification code to use in the next step
+    } else {
+        echo "Error: $httpCode - $response";
+    }
+
+    curl_close($curl);
+}
+
+// Step 2: Verify your phone with the code
+function verifyCode() {
+    $url = 'http://192.168.102.35:3000/api/verify';
+    $data = [
+        'phoneNumber' => '+12025550108',
+        'code' => '123456' // The code you received from registration
+    ];
+
+    $curl = curl_init();
+    curl_setopt_array($curl, [
+        CURLOPT_URL => $url,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+        CURLOPT_POSTFIELDS => json_encode($data)
+    ]);
+
+    $response = curl_exec($curl);
+    $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+
+    if ($httpCode === 200) {
+        $result = json_decode($response, true);
+        echo "Your API key: " . $result['apiKey'] . "\n";
+        // Save this API key securely
+    } else {
+        echo "Error: $httpCode - $response";
+    }
+
+    curl_close($curl);
+}
+
+// Step 3: Use the API key to check phone numbers
+function checkNumbers() {
+    $apiKey = 'your_api_key_here';
+    $url = 'http://192.168.102.35:3000/api/check';
+
+    $data = [
+        'numbers' => ['+12025550108', '+12025550109']
+    ];
+
+    $curl = curl_init();
+    curl_setopt_array($curl, [
+        CURLOPT_URL => $url,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => [
+            'Content-Type: application/json',
+            "x-api-key: $apiKey"
+        ],
+        CURLOPT_POSTFIELDS => json_encode($data)
+    ]);
+
+    $response = curl_exec($curl);
+    $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+
+    if ($httpCode === 200) {
+        $result = json_decode($response, true);
+        print_r($result);
+    } else {
+        echo "Error: $httpCode - $response";
+    }
+
+    curl_close($curl);
+}</code></pre>
+            </div>
+        </section>
+
+        <section class="api-section">
+            <h2>Error Codes</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Status Code</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>400</td>
+                        <td>Bad Request - Invalid parameters or request format</td>
+                    </tr>
+                    <tr>
+                        <td>401</td>
+                        <td>Unauthorized - Invalid or missing API key</td>
+                    </tr>
+                    <tr>
+                        <td>403</td>
+                        <td>Forbidden - API key is disabled</td>
+                    </tr>
+                    <tr>
+                        <td>429</td>
+                        <td>Too Many Requests - Rate limit exceeded</td>
+                    </tr>
+                    <tr>
+                        <td>500</td>
+                        <td>Server Error - Please contact support</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <footer class="footer">
+            <p>&copy; 2025 WhatsApp Checker API. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Tab switching functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabs = document.querySelectorAll('.tab');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Remove active class from all tabs
+                    tabs.forEach(t => t.classList.remove('active'));
+                    
+                    // Add active class to clicked tab
+                    tab.classList.add('active');
+                    
+                    // Hide all tab content
+                    document.querySelectorAll('.code-tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    
+                    // Show the selected tab content
+                    const tabId = `${tab.getAttribute('data-tab')}-content`;
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+
+            // Smooth scrolling for navigation links
+            document.querySelectorAll('.main-navigation a').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    
+                    // Remove active class from all nav items
+                    document.querySelectorAll('.main-navigation a').forEach(a => {
+                        a.classList.remove('active');
+                    });
+                    
+                    // Add active class to clicked item
+                    this.classList.add('active');
+                    
+                    // Scroll to target section
+                    const targetId = this.getAttribute('href').substring(1);
+                    const targetElement = document.getElementById(targetId);
+                    
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 20,
+                        behavior: 'smooth'
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html> 

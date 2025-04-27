@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - WhatsApp Checker</title>
+    <style>
+        :root {
+            --primary: #25D366;
+            --dark: #1a1a1a;
+            --light: #ffffff;
+            --gray: #242424;
+            --gray-light: #2a2a2a;
+            --danger: #ff4444;
+            --success: #00C851;
+            --font-mono: 'Courier New', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--dark);
+            color: var(--light);
+            font-family: 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Background pattern */
+        .bg-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(var(--gray-light) 1px, transparent 1px);
+            background-size: 20px 20px;
+            opacity: 0.08;
+            z-index: -1;
+        }
+
+        /* Login Card */
+        .login-card {
+            background-color: var(--gray);
+            border-radius: 8px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .login-header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .login-logo {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .login-logo svg {
+            width: 60px;
+            height: 60px;
+            fill: var(--primary);
+        }
+
+        .login-title {
+            color: var(--primary);
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-subtitle {
+            opacity: 0.7;
+            font-size: 1rem;
+        }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 4px;
+            background-color: var(--gray-light);
+            border: 1px solid #333;
+            color: var(--light);
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+
+        .btn {
+            display: inline-block;
+            width: 100%;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            background-color: var(--primary);
+            color: var(--dark);
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            text-align: center;
+            font-size: 1rem;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        .error-message {
+            background-color: rgba(255, 68, 68, 0.1);
+            border-left: 4px solid var(--danger);
+            padding: 0.75rem;
+            margin-bottom: 1.5rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-pattern"></div>
+
+    <div class="login-card">
+        <div class="login-header">
+            <div class="login-logo">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 2C6.5 2 2 6.5 2 12c0 2 .5 4 1.5 5.5L2 22l4.5-1.5C8 21.5 10 22 12 22c5.5 0 10-4.5 10-10S17.5 2 12 2zm0 18c-1.8 0-3.4-.4-4.9-1.2l-.3-.2-3.3 1 1-3.3-.2-.3c-.8-1.4-1.2-3-1.2-4.9 0-4.9 4-8.9 8.9-8.9s9 4 9 8.9-4 9-9 9zm5.3-6.5c-.3-.1-1.5-.8-1.8-.9-.3-.1-.4-.1-.6.1-.2.2-.6.9-.8 1-.2.2-.3.2-.6 0-.7-.3-1.4-.5-2-1.2-.4-.4-.6-.9-.7-1.1v-.1c.2-.2.4-.3.5-.6.2-.2.3-.3.4-.5v-.5c0-.2-.6-1.5-.8-2.1-.2-.6-.4-.5-.6-.5h-.5c-.2 0-.5.1-.7.3-.2.2-.9.9-.9 2.2 0 1.3 1 2.6 1.1 2.8.1.2 2 3.2 4.9 4.3 2.9 1.1 2.9.8 3.4.7.5-.1 1.5-.7 1.8-1.3.2-.6.2-1.2.2-1.3-.1-.1-.3-.2-.6-.3z"/>
+                </svg>
+            </div>
+            <h1 class="login-title">Admin Login</h1>
+            <p class="login-subtitle">WhatsApp Checker Dashboard</p>
+        </div>
+
+        <div id="error-message" class="error-message"></div>
+
+        <form id="login-form">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" class="form-control" required>
+            </div>
+
+            <button type="submit" class="btn">Log In</button>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is already logged in
+            const authToken = localStorage.getItem('adminAuthToken');
+            if (authToken) {
+                // Check if token is still valid before redirecting
+                fetch(`/admin/validate-token?token=${authToken}`)
+                    .then(response => {
+                        if (response.ok) {
+                            // Only redirect if token is valid
+                            window.location.href = `/admin?token=${authToken}`;
+                        } else {
+                            // Clear invalid token
+                            localStorage.removeItem('adminAuthToken');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Token validation error:', error);
+                        localStorage.removeItem('adminAuthToken');
+                    });
+            }
+            
+            const loginForm = document.getElementById('login-form');
+            const errorMessage = document.getElementById('error-message');
+            
+            loginForm.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                
+                const username = document.getElementById('username').value.trim();
+                const password = document.getElementById('password').value.trim();
+                
+                if (!username || !password) {
+                    showError('Please enter both username and password');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/admin-login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ username, password })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (!response.ok) {
+                        showError(result.error || 'Authentication failed');
+                        return;
+                    }
+                    
+                    if (result.success && result.token) {
+                        // Store token in localStorage
+                        localStorage.setItem('adminAuthToken', result.token);
+                        
+                        // Redirect to admin dashboard with token
+                        window.location.href = `/admin?token=${result.token}`;
+                    } else {
+                        showError('Authentication failed. Missing token.');
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    showError('An error occurred. Please try again.');
+                }
+            });
+            
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorMessage.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms and Conditions - WhatsApp Checker</title>
+    <style>
+        :root {
+            --primary: #25D366;
+            --dark: #1a1a1a;
+            --light: #ffffff;
+            --gray: #242424;
+            --gray-light: #2a2a2a;
+            --font-mono: 'Courier New', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--dark);
+            color: var(--light);
+            font-family: 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Background pattern */
+        .bg-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(var(--gray-light) 1px, transparent 1px);
+            background-size: 20px 20px;
+            opacity: 0.08;
+            z-index: -1;
+        }
+
+        /* Container */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--gray-light);
+            padding-bottom: 1rem;
+        }
+
+        .header h1 {
+            color: var(--primary);
+            font-size: 2.5rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo svg {
+            width: 40px;
+            height: 40px;
+            fill: var(--primary);
+        }
+
+        .logo-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo-text span:first-child {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .logo-text span:last-child {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .nav-link {
+            color: var(--light);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .nav-link:hover {
+            background-color: var(--gray);
+        }
+
+        /* Terms Content */
+        .terms-section {
+            background-color: var(--gray);
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+
+        .terms-section h2 {
+            color: var(--primary);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #333;
+        }
+
+        .terms-section h3 {
+            color: var(--light);
+            margin: 1.5rem 0 1rem;
+            font-size: 1.2rem;
+        }
+
+        .terms-section p {
+            margin-bottom: 1rem;
+        }
+
+        .terms-section ul {
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .terms-section li {
+            margin-bottom: 0.5rem;
+        }
+
+        .important-notice {
+            background-color: rgba(255, 193, 7, 0.1);
+            border-left: 4px solid #FFC107;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .important-notice h4 {
+            color: #FFC107;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Agreement Form */
+        .agreement-form {
+            background-color: var(--gray);
+            padding: 2rem;
+            border-radius: 8px;
+            margin-top: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            margin-top: 0.3rem;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            background-color: var(--primary);
+            color: var(--dark);
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            font-size: 1rem;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            background-color: #555;
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--gray-light);
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            
+            .container {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-pattern"></div>
+
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 2C6.5 2 2 6.5 2 12c0 2 .5 4 1.5 5.5L2 22l4.5-1.5C8 21.5 10 22 12 22c5.5 0 10-4.5 10-10S17.5 2 12 2zm0 18c-1.8 0-3.4-.4-4.9-1.2l-.3-.2-3.3 1 1-3.3-.2-.3c-.8-1.4-1.2-3-1.2-4.9 0-4.9 4-8.9 8.9-8.9s9 4 9 8.9-4 9-9 9zm5.3-6.5c-.3-.1-1.5-.8-1.8-.9-.3-.1-.4-.1-.6.1-.2.2-.6.9-.8 1-.2.2-.3.2-.6 0-.7-.3-1.4-.5-2-1.2-.4-.4-.6-.9-.7-1.1v-.1c.2-.2.4-.3.5-.6.2-.2.3-.3.4-.5v-.5c0-.2-.6-1.5-.8-2.1-.2-.6-.4-.5-.6-.5h-.5c-.2 0-.5.1-.7.3-.2.2-.9.9-.9 2.2 0 1.3 1 2.6 1.1 2.8.1.2 2 3.2 4.9 4.3 2.9 1.1 2.9.8 3.4.7.5-.1 1.5-.7 1.8-1.3.2-.6.2-1.2.2-1.3-.1-.1-.3-.2-.6-.3z"/>
+                </svg>
+                <div class="logo-text">
+                    <span>WhatsApp Checker</span>
+                    <span>Terms & Conditions</span>
+                </div>
+            </div>
+            <a href="/" class="nav-link">Back to Homepage</a>
+        </header>
+
+        <section class="terms-section">
+            <h2>Terms and Conditions</h2>
+            <p>Last updated: <span id="last-updated">June 15, 2024</span></p>
+            
+            <p>Welcome to WhatsApp Checker, a service that allows you to check if phone numbers are registered on WhatsApp. By using our service, you agree to these Terms and Conditions in full. Please read them carefully before using our services.</p>
+            
+            <div class="important-notice">
+                <h4>Important Notice</h4>
+                <p>Our service is designed for legitimate purposes only. By using WhatsApp Checker, you agree to comply with all applicable laws and WhatsApp's Terms of Service.</p>
+            </div>
+            
+            <h3>1. Acceptance of Terms</h3>
+            <p>By accessing or using our service, you confirm that you accept these terms of use and that you agree to comply with them. If you do not agree to these terms, you must not use our service.</p>
+            
+            <h3>2. Service Description</h3>
+            <p>WhatsApp Checker provides the following services:</p>
+            <ul>
+                <li>Verification of phone numbers to determine if they are registered on WhatsApp</li>
+                <li>API access for checking phone numbers programmatically</li>
+                <li>Telegram bot interface for easy interaction</li>
+            </ul>
+            
+            <h3>3. User Responsibilities</h3>
+            <p>When using our service, you agree:</p>
+            <ul>
+                <li>To provide accurate information</li>
+                <li>To use the service only for legitimate purposes</li>
+                <li>Not to use our service for spam, harassment, or any illegal activities</li>
+                <li>Not to attempt to reverse-engineer our systems</li>
+                <li>Not to use automated systems to access our service beyond our provided API</li>
+                <li>To keep your API keys secure and not share them with unauthorized parties</li>
+            </ul>
+            
+            <h3>4. Privacy and Data Usage</h3>
+            <p>We collect and store the following information:</p>
+            <ul>
+                <li>Phone numbers you check through our service</li>
+                <li>Your Telegram account information if you use our Telegram bot</li>
+                <li>API usage statistics</li>
+                <li>WhatsApp session data for providing our service</li>
+            </ul>
+            <p>We store this data to provide our service, improve user experience, and for security purposes. We do not sell your data to third parties.</p>
+            
+            <h3>5. API Usage Limits</h3>
+            <p>Our API is subject to the following limits:</p>
+            <ul>
+                <li>Maximum 10 numbers per request</li>
+                <li>Rate limits may be applied based on server load</li>
+                <li>Bulk checking is only available through approved channels</li>
+            </ul>
+            <p>Abuse of our API may result in temporary or permanent restrictions on your account.</p>
+            
+            <h3>6. Disclaimer</h3>
+            <p>Our service is provided "as is" and "as available" without any warranties, expressed or implied. We do not guarantee the accuracy, availability, or continuity of the service.</p>
+            <p>We are not affiliated with WhatsApp Inc. or Meta Platforms, Inc. Our service uses the WhatsApp Web API but is an independent tool.</p>
+            
+            <h3>7. Limitation of Liability</h3>
+            <p>To the fullest extent permitted by law, we shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of or inability to use the service.</p>
+            
+            <h3>8. Changes to Terms</h3>
+            <p>We may revise these terms of service at any time without prior notice. By continuing to use our service after changes are made, you agree to be bound by the revised terms.</p>
+            
+            <h3>9. Termination</h3>
+            <p>We may terminate or suspend access to our service immediately, without prior notice, for conduct that we believe violates these Terms and Conditions or is harmful to other users of our service, us, or third parties, or for any other reason at our sole discretion.</p>
+            
+            <h3>10. Governing Law</h3>
+            <p>These terms shall be governed by and construed in accordance with the laws of the jurisdiction in which we operate, without regard to its conflict of law provisions.</p>
+        </section>
+
+        <section class="agreement-form">
+            <h2>User Agreement</h2>
+            <p>To continue using WhatsApp Checker, you must agree to our Terms and Conditions.</p>
+            
+            <form id="agreement-form">
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="agree-terms" required>
+                        <label for="agree-terms">I have read and agree to the Terms and Conditions</label>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="agree-privacy" required>
+                        <label for="agree-privacy">I understand that my usage data will be stored as described in the Privacy section</label>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="agree-usage" required>
+                        <label for="agree-usage">I agree to use this service only for legitimate purposes and not for spam, harassment, or any illegal activities</label>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn" id="agree-button" disabled>I Agree - Continue to Service</button>
+            </form>
+        </section>
+
+        <footer class="footer">
+            <p>&copy; 2024 WhatsApp Checker. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            const agreeButton = document.getElementById('agree-button');
+            
+            // Check if user has already agreed
+            const hasAgreed = localStorage.getItem('termsAgreed');
+            if (hasAgreed) {
+                agreeButton.textContent = 'Already Agreed - Continue to Service';
+                agreeButton.disabled = false;
+            }
+            
+            // Enable button only when all checkboxes are checked
+            function updateButtonState() {
+                const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
+                agreeButton.disabled = !allChecked;
+            }
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateButtonState);
+            });
+            
+            // Handle form submission
+            document.getElementById('agreement-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Save agreement to localStorage
+                localStorage.setItem('termsAgreed', 'true');
+                localStorage.setItem('termsAgreedDate', new Date().toISOString());
+                
+                // Redirect to homepage or dashboard
+                window.location.href = '/';
+            });
+        });
+    </script>
+</body>
+</html> 
