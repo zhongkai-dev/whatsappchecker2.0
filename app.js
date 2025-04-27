@@ -705,8 +705,11 @@ app.post('/admin-login', bodyParser.json(), async (req, res) => {
     const { username, password } = req.body;
     
     try {
+        console.log(`Admin login attempt: username=${username}, password=${password ? "provided" : "missing"}`);
+        
         // Check against hardcoded credentials first for simplicity
         if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+            console.log("Login successful using hardcoded credentials");
             const token = generateToken();
             ADMIN_TOKENS.set(token, { createdAt: Date.now() });
             
@@ -716,14 +719,17 @@ app.post('/admin-login', bodyParser.json(), async (req, res) => {
         
         // Check credentials against MongoDB stored admin user
         const adminUser = await adminCollection.findOne({ username });
+        console.log("DB admin lookup result:", adminUser ? "found" : "not found");
         
         if (adminUser && await bcrypt.compare(password, adminUser.password)) {
+            console.log("Login successful using database credentials");
             const token = generateToken();
             ADMIN_TOKENS.set(token, { createdAt: Date.now() });
             
             // Return success with token
             return res.json({ success: true, token });
         } else {
+            console.log("Login failed - invalid credentials");
             return res.status(401).json({ success: false, error: 'Invalid credentials' });
         }
     } catch (err) {
