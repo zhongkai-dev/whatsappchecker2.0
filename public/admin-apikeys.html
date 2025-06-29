@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Keys - Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #f59e0b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --dark: #0f172a;
+            --dark-light: #1e293b;
+            --gray: #64748b;
+            --gray-light: #94a3b8;
+            --white: #ffffff;
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --border: #334155;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            color: var(--white);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Layout */
+        .admin-container {
+            /* display: grid; */
+            /* grid-template-columns: 280px 1fr; */
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            padding: 2rem 0;
+            position: fixed;
+            height: 100vh;
+            width: 280px;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 0 2rem 2rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .logo i {
+            font-size: 2rem;
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 0 1rem;
+        }
+
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: var(--gray-light);
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary);
+            transform: translateX(4px);
+        }
+
+        .nav-link.active {
+            background: var(--primary);
+            color: var(--white);
+            box-shadow: var(--shadow);
+        }
+
+        .nav-link i {
+            font-size: 1.2rem;
+            width: 20px;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--white);
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-info {
+            text-align: right;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: var(--white);
+        }
+
+        .user-role {
+            font-size: 0.875rem;
+            color: var(--gray);
+        }
+
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: var(--white);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .user-avatar:hover {
+            transform: scale(1.05);
+        }
+
+        /* Action Buttons */
+        .actions-section {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border);
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: inherit;
+            text-decoration: none;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: var(--white);
+        }
+
+        .btn-success:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: var(--white);
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: var(--white);
+        }
+
+        .btn-warning:hover {
+            background: #d97706;
+            transform: translateY(-2px);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--white);
+        }
+
+        .close {
+            color: var(--gray);
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .close:hover {
+            color: var(--white);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--white);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg-tertiary);
+            color: var(--white);
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+        }
+
+        /* Data Table */
+        .data-section {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--white);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .data-table th {
+            background: var(--bg-tertiary);
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .data-table tbody tr {
+            transition: all 0.3s ease;
+        }
+
+        .data-table tbody tr:hover {
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Status badges */
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-badge.active {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .status-badge.inactive {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
+
+        .status-badge.suspended {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        /* API Key display */
+        .api-key {
+            font-family: 'Courier New', monospace;
+            background: var(--bg-tertiary);
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            color: var(--primary);
+            border: 1px solid var(--border);
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            background: var(--primary);
+            color: var(--white);
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            margin-left: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        /* Action buttons in table */
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 3rem;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Alert */
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .alert-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            /* .admin-container {
+                grid-template-columns: 1fr;
+            } */
+            
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .actions-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+            
+            .data-table {
+                font-size: 0.875rem;
+            }
+            
+            .data-table th,
+            .data-table td {
+                padding: 0.75rem 0.5rem;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fab fa-whatsapp"></i>
+                    <span>WhatsApp Checker</span>
+                </div>
+            </div>
+            
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="/admin-new.html" class="nav-link">
+                        <i class="fas fa-tachometer-alt"></i>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/admin-history.html" class="nav-link">
+                        <i class="fas fa-history"></i>
+                        Check History
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/admin-apikeys.html" class="nav-link active">
+                        <i class="fas fa-key"></i>
+                        API Keys
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/admin-users.html" class="nav-link">
+                        <i class="fas fa-users"></i>
+                        User Management
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/admin-broadcast.html" class="nav-link">
+                        <i class="fas fa-broadcast-tower"></i>
+                        Broadcast
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/admin-whatsapp.html" class="nav-link">
+                        <i class="fab fa-whatsapp"></i>
+                        WhatsApp
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/admin-settings.html" class="nav-link">
+                        <i class="fas fa-cog"></i>
+                        Settings
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="header">
+                <h1 class="page-title">API Keys Management</h1>
+                <div class="user-menu">
+                    <div class="user-info">
+                        <div class="user-name">Admin</div>
+                        <div class="user-role">Administrator</div>
+                    </div>
+                    <div class="user-avatar" onclick="logout()">
+                        <i class="fas fa-user"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alert -->
+            <div id="alert" class="alert"></div>
+
+            <!-- Action Buttons -->
+            <div class="actions-section">
+                <div class="actions-grid">
+                    <!-- <button id="create-api-key" class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Create New API Key
+                    </button>
+                    <button id="bulk-generate" class="btn btn-success">
+                        <i class="fas fa-magic"></i>
+                        Bulk Generate
+                    </button>
+                    <button id="export-keys" class="btn btn-warning">
+                        <i class="fas fa-download"></i>
+                        Export Keys
+                    </button> -->
+                    <button id="refresh-keys" class="btn btn-primary">
+                        <i class="fas fa-sync-alt"></i>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="data-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-key"></i>
+                        API Keys
+                    </h2>
+                </div>
+
+                <div id="loading" class="loading">
+                    <div class="spinner"></div>
+                </div>
+
+                <table class="data-table" id="api-keys-table" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>Phone Number</th>
+                            <th>API Key</th>
+                            <th>Created</th>
+                            <th>Last Used</th>
+                            <th>Usage Count</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="api-keys-body">
+                        <!-- Data will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals removed as functionality is not implemented -->
+
+    <script>
+        // --- Token and Auth Handling ---
+        const urlParams = new URLSearchParams(window.location.search);
+        let authToken = urlParams.get('token') || localStorage.getItem('adminAuthToken');
+
+        if (urlParams.has('token')) {
+            localStorage.setItem('adminAuthToken', authToken);
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        if (!authToken) {
+            window.location.href = '/admin-login.html';
+        }
+
+        // --- Utility Functions ---
+        async function fetchData(urlPath, options = {}) {
+            const url = new URL(urlPath, window.location.origin);
+            url.searchParams.set('token', authToken);
+
+            const finalOptions = {
+                ...options,
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers,
+                },
+            };
+
+            try {
+                const response = await fetch(url, finalOptions);
+                if (response.status === 401) {
+                    logout();
+                    return;
+                }
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || `API request failed: ${response.statusText}`);
+                }
+                return response.json();
+            } catch (error) {
+                console.error(`Fetch error for ${urlPath}:`, error);
+                showAlert(error.message, 'danger');
+                throw error;
+            }
+        }
+
+        function logout() {
+            const token = localStorage.getItem('adminAuthToken');
+            localStorage.removeItem('adminAuthToken');
+            window.location.href = token ? `/admin-logout?token=${token}` : '/admin-login.html';
+        }
+
+        function formatTime(timestamp) {
+            return timestamp ? new Date(timestamp).toLocaleString() : 'N/A';
+        }
+
+        function showAlert(message, type = 'success') {
+            const alertEl = document.getElementById('alert');
+            alertEl.textContent = message;
+            alertEl.className = `alert alert-${type}`;
+            alertEl.style.display = 'block';
+            setTimeout(() => alertEl.style.display = 'none', 5000);
+        }
+
+        // --- Page Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+                if (link.href && !link.href.includes('token=')) {
+                    const url = new URL(link.href);
+                    url.searchParams.set('token', authToken);
+                    link.href = url.href;
+                }
+            });
+
+            // Set active link
+            const currentPagePath = window.location.pathname;
+            document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+                const linkPath = new URL(link.href).pathname;
+                if (linkPath === currentPagePath) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+            
+            loadApiKeys();
+        });
+
+        // --- Event Listeners ---
+        document.getElementById('refresh-keys').addEventListener('click', loadApiKeys);
+
+        // --- Data Loading and Rendering ---
+        async function loadApiKeys() {
+            const loading = document.getElementById('loading');
+            const table = document.getElementById('api-keys-table');
+            loading.style.display = 'flex';
+            table.style.display = 'none';
+
+            try {
+                const apiKeys = await fetchData('/admin/api-keys');
+                if (apiKeys) {
+                    displayApiKeys(apiKeys);
+                    table.style.display = 'table';
+                }
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function displayApiKeys(apiKeys) {
+            const tbody = document.getElementById('api-keys-body');
+            if (!apiKeys || apiKeys.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No API keys found.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = apiKeys.map(key => `
+                <tr>
+                    <td>${key.phoneNumber || 'N/A'}</td>
+                    <td>
+                        <div class="api-key" title="${key.key}">${key.key.substring(0, 8)}...</div>
+                        <button class="copy-btn" onclick="copyToClipboard('${key.key}')">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </td>
+                    <td>${formatTime(key.createdAt)}</td>
+                    <td>${formatTime(key.lastUsed)}</td>
+                    <td>${key.usageCount || 0}</td>
+                    <td>
+                        <span class="status-badge ${key.disabled ? 'inactive' : 'active'}">
+                            ${key.disabled ? 'Disabled' : 'Active'}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-sm ${key.disabled ? 'btn-success' : 'btn-warning'}" onclick="toggleApiKeyStatus('${key.key}', ${key.disabled})">
+                                <i class="fas fa-${key.disabled ? 'play' : 'pause'}"></i>
+                                ${key.disabled ? 'Enable' : 'Disable'}
+                            </button>
+                            <!-- Delete functionality not implemented -->
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showAlert('API key copied to clipboard', 'success');
+            }, (err) => {
+                showAlert('Failed to copy text.', 'danger');
+                console.error('Could not copy text: ', err);
+            });
+        }
+
+        async function toggleApiKeyStatus(key, isDisabled) {
+            try {
+                const response = await fetchData('/admin/toggle-api-key', {
+                    method: 'POST',
+                    body: JSON.stringify({ key: key, disabled: !isDisabled })
+                });
+                if (response) {
+                    showAlert(response.message, 'success');
+                    loadApiKeys();
+                }
+            } catch(error) {
+                // showAlert is called inside fetchData
+            }
+        }
+    </script>
+</body>
+</html> 

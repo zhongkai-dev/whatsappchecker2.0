@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check History - Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #f59e0b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --dark: #0f172a;
+            --dark-light: #1e293b;
+            --gray: #64748b;
+            --gray-light: #94a3b8;
+            --white: #ffffff;
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --border: #334155;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            color: var(--white);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Layout */
+        .admin-container {
+            /* display: grid; */
+            /* grid-template-columns: 280px 1fr; */
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            padding: 2rem 0;
+            position: fixed;
+            height: 100vh;
+            width: 280px;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 0 2rem 2rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .logo i {
+            font-size: 2rem;
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 0 1rem;
+        }
+
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: var(--gray-light);
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary);
+            transform: translateX(4px);
+        }
+
+        .nav-link.active {
+            background: var(--primary);
+            color: var(--white);
+            box-shadow: var(--shadow);
+        }
+
+        .nav-link i {
+            font-size: 1.2rem;
+            width: 20px;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--white);
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-info {
+            text-align: right;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: var(--white);
+        }
+
+        .user-role {
+            font-size: 0.875rem;
+            color: var(--gray);
+        }
+
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: var(--white);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .user-avatar:hover {
+            transform: scale(1.05);
+        }
+
+        /* Filters and Controls */
+        .controls-section {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border);
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: var(--white);
+            font-size: 0.875rem;
+        }
+
+        .form-control {
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg-tertiary);
+            color: var(--white);
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: var(--gray);
+            color: var(--white);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-light);
+            transform: translateY(-2px);
+        }
+
+        /* Data Table */
+        .data-section {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--white);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .data-table th {
+            background: var(--bg-tertiary);
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .data-table tbody tr {
+            transition: all 0.3s ease;
+        }
+
+        .data-table tbody tr:hover {
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Status badges */
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-badge.success {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .status-badge.danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
+
+        .status-badge.warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        /* Pagination */
+        .pagination-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .pagination-info {
+            color: var(--gray);
+            font-size: 0.875rem;
+        }
+
+        .pagination {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .page-btn {
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg-tertiary);
+            color: var(--white);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+        }
+
+        .page-btn:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .page-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 3rem;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            /* .admin-container {
+                grid-template-columns: 1fr;
+            } */
+            
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+            
+            .data-table {
+                font-size: 0.875rem;
+            }
+            
+            .data-table th,
+            .data-table td {
+                padding: 0.75rem 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fab fa-whatsapp"></i>
+                    <span>WhatsApp Checker</span>
+                </div>
+            </div>
+            
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="/admin-new.html" class="nav-link">
+                        <i class="fas fa-tachometer-alt"></i>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/admin-history.html" class="nav-link active">
+                        <i class="fas fa-history"></i>
+                        Check History
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/admin-apikeys.html" class="nav-link">
+                        <i class="fas fa-key"></i>
+                        API Keys
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/admin-users.html" class="nav-link">
+                        <i class="fas fa-users"></i>
+                        User Management
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/admin-broadcast.html" class="nav-link">
+                        <i class="fas fa-broadcast-tower"></i>
+                        Broadcast
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/admin-whatsapp.html" class="nav-link">
+                        <i class="fab fa-whatsapp"></i>
+                        WhatsApp
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/admin-settings.html" class="nav-link">
+                        <i class="fas fa-cog"></i>
+                        Settings
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="header">
+                <h1 class="page-title">Check History</h1>
+                <div class="user-menu">
+                    <div class="user-info">
+                        <div class="user-name">Admin</div>
+                        <div class="user-role">Administrator</div>
+                    </div>
+                    <div class="user-avatar" onclick="logout()">
+                        <i class="fas fa-user"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters and Controls -->
+            <div class="controls-section">
+                <div class="controls-grid">
+                    <div class="form-group">
+                        <label class="form-label">Date Range</label>
+                        <select id="date-range" class="form-control">
+                            <option value="today">Today</option>
+                            <option value="week">Last 7 days</option>
+                            <option value="month" selected>Last 30 days</option>
+                            <option value="all">All time</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">User</label>
+                        <select id="user-filter" class="form-control">
+                            <option value="">All Users</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Result</label>
+                        <select id="result-filter" class="form-control">
+                            <option value="">All Results</option>
+                            <option value="exists">Exists</option>
+                            <option value="not_exists">Not Exists</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Items per page</label>
+                        <select id="items-per-page" class="form-control">
+                            <option value="10">10</option>
+                            <option value="20" selected>20</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button id="apply-filters" class="btn btn-primary">
+                            <i class="fas fa-filter"></i>
+                            Apply Filters
+                        </button>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button id="export-filtered" class="btn btn-secondary">
+                                <i class="fas fa-download"></i>
+                                Filtered
+                            </button>
+                            <button id="export-all" class="btn btn-secondary">
+                                <i class="fas fa-cloud-download-alt"></i>
+                                All
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="data-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-table"></i>
+                        Check History
+                    </h2>
+                    <button id="refresh-data" class="btn btn-primary">
+                        <i class="fas fa-sync-alt"></i>
+                        Refresh
+                    </button>
+                </div>
+
+                <div id="loading" class="loading">
+                    <div class="spinner"></div>
+                </div>
+
+                <table class="data-table" id="history-table" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>User</th>
+                            <th>Phone Number</th>
+                            <th>Result</th>
+                            <th>Source</th>
+                            <th>IP Address</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-body">
+                        <!-- Data will be loaded here -->
+                    </tbody>
+                </table>
+
+                <!-- Pagination -->
+                <div class="pagination-section">
+                    <div class="pagination-info" id="pagination-info">
+                        Showing 0 to 0 of 0 results
+                    </div>
+                    <div class="pagination" id="pagination">
+                        <!-- Pagination buttons will be generated here -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- Token and Auth Handling ---
+        const urlParams = new URLSearchParams(window.location.search);
+        let authToken = urlParams.get('token') || localStorage.getItem('adminAuthToken');
+
+        if (urlParams.has('token')) {
+            localStorage.setItem('adminAuthToken', authToken);
+            // Clean URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        if (!authToken) {
+            window.location.href = '/admin-login.html';
+        }
+
+        let currentPage = 1;
+        let totalPages = 1;
+        let currentFilters = {
+            // For now, filters are not implemented on backend, so we use defaults
+            itemsPerPage: 20
+        };
+
+        // --- Utility Functions ---
+        async function fetchData(urlPath, options = {}) {
+            const url = new URL(urlPath, window.location.origin);
+            url.searchParams.set('token', authToken);
+            
+            // Add other params from options
+            if(options.params) {
+                for (const key in options.params) {
+                    url.searchParams.set(key, options.params[key]);
+                }
+            }
+            
+            try {
+                const response = await fetch(url, options);
+                if (response.status === 401) { // Unauthorized
+                    logout();
+                    return;
+                }
+                if (!response.ok) {
+                    throw new Error(`API request failed: ${response.statusText}`);
+                }
+                return response.json();
+            } catch (error) {
+                console.error(`Fetch error for ${urlPath}:`, error);
+                throw error;
+            }
+        }
+
+        function logout() {
+            const token = localStorage.getItem('adminAuthToken');
+            localStorage.removeItem('adminAuthToken');
+            window.location.href = token ? `/admin-logout?token=${token}` : '/admin-login.html';
+        }
+
+        function formatTime(timestamp) {
+            return timestamp ? new Date(timestamp).toLocaleString() : 'N/A';
+        }
+
+        // --- Page Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+                if (link.href && !link.href.includes('token=')) {
+                    const url = new URL(link.href);
+                    url.searchParams.set('token', authToken);
+                    link.href = url.href;
+                }
+            });
+
+            // Set active link
+            const currentPagePath = window.location.pathname;
+            document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+                const linkPath = new URL(link.href).pathname;
+                if (linkPath === currentPagePath) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+
+            // Load users for the filter dropdown
+            loadUsers();
+            loadCheckHistory();
+        });
+
+        // --- Event Listeners ---
+        document.getElementById('apply-filters').addEventListener('click', () => {
+            currentPage = 1;
+            updateFilters();
+            loadCheckHistory();
+        });
+
+        document.getElementById('refresh-data').addEventListener('click', loadCheckHistory);
+        document.getElementById('export-filtered').addEventListener('click', () => exportData(false));
+        document.getElementById('export-all').addEventListener('click', () => exportData(true));
+        document.getElementById('items-per-page').addEventListener('change', () => {
+            currentPage = 1;
+            updateFilters();
+            loadCheckHistory();
+        });
+
+        // --- Filter Functions ---
+        function updateFilters() {
+            const dateRange = document.getElementById('date-range').value;
+            const userFilter = document.getElementById('user-filter').value;
+            const resultFilter = document.getElementById('result-filter').value;
+            const itemsPerPage = document.getElementById('items-per-page').value;
+            
+            currentFilters = {
+                dateRange,
+                userId: userFilter,
+                result: resultFilter,
+                itemsPerPage: parseInt(itemsPerPage)
+            };
+        }
+
+        async function loadUsers() {
+            try {
+                const data = await fetchData('/admin/users', {
+                    params: { limit: 1000 } // Get all users for the dropdown
+                });
+                
+                if (data && data.users) {
+                    const userSelect = document.getElementById('user-filter');
+                    const currentValue = userSelect.value;
+                    
+                    // Keep the "All Users" option
+                    userSelect.innerHTML = '<option value="">All Users</option>';
+                    
+                    // Add users to dropdown
+                    data.users.forEach(user => {
+                        const option = document.createElement('option');
+                        option.value = user.userId;
+                        option.textContent = user.username || user.userId;
+                        userSelect.appendChild(option);
+                    });
+                    
+                    // Restore selected value if possible
+                    if (currentValue) {
+                        userSelect.value = currentValue;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading users for filter:', error);
+            }
+        }
+
+        // --- Data Loading and Rendering ---
+        async function loadCheckHistory() {
+            const loading = document.getElementById('loading');
+            const table = document.getElementById('history-table');
+            loading.style.display = 'flex';
+            table.style.display = 'none';
+
+            try {
+                // Prepare filter parameters
+                const params = {
+                    page: currentPage,
+                    limit: currentFilters.itemsPerPage || 20
+                };
+                
+                // Add date range filter
+                if (currentFilters.dateRange) {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    
+                    if (currentFilters.dateRange === 'today') {
+                        params.startDate = today.toISOString();
+                    } else if (currentFilters.dateRange === 'week') {
+                        const weekAgo = new Date(today);
+                        weekAgo.setDate(today.getDate() - 7);
+                        params.startDate = weekAgo.toISOString();
+                    } else if (currentFilters.dateRange === 'month') {
+                        const monthAgo = new Date(today);
+                        monthAgo.setDate(today.getDate() - 30);
+                        params.startDate = monthAgo.toISOString();
+                    }
+                }
+                
+                // Add user filter
+                if (currentFilters.userId) {
+                    params.userId = currentFilters.userId;
+                }
+                
+                // Add result filter
+                if (currentFilters.result) {
+                    params.result = currentFilters.result;
+                }
+
+                const data = await fetchData('/admin/check-history', { params });
+                if (data) {
+                    displayCheckHistory(data.checks);
+                    updatePagination(data);
+                }
+            } catch (error) {
+                console.error('Error loading check history:', error);
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function displayCheckHistory(checks) {
+            const table = document.getElementById('history-table');
+            const tbody = document.getElementById('history-body');
+            table.style.display = 'table';
+            
+            if (!checks || checks.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No history found.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = checks.map(item => `
+                <tr>
+                    <td>${formatTime(item.timestamp)}</td>
+                    <td>${item.username || 'N/A'}</td>
+                    <td>${item.number}</td>
+                    <td>
+                        <span class="status-badge ${item.result.includes('✅') ? 'success' : 'danger'}">
+                            ${item.result.includes('✅') ? 'Registered' : 'Not Registered'}
+                        </span>
+                    </td>
+                    <td>${item.apiKey ? 'API' : 'Telegram'}</td>
+                    <td>${item.ipAddress || 'N/A'}</td>
+                </tr>
+            `).join('');
+        }
+
+        function updatePagination(data) {
+            currentPage = data.page;
+            totalPages = data.totalPages;
+            const totalItems = data.total;
+            const limit = parseInt(document.getElementById('items-per-page').value);
+            const startIndex = (currentPage - 1) * limit;
+            const endIndex = Math.min(startIndex + limit -1, totalItems - 1);
+
+
+            const info = document.getElementById('pagination-info');
+            info.textContent = `Showing ${startIndex + 1} to ${endIndex + 1} of ${totalItems} results`;
+            
+            const paginationContainer = document.getElementById('pagination');
+            let paginationHTML = '';
+            
+            paginationHTML += `<button class="page-btn" onclick="changePage(${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
+            
+            // Simplified pagination buttons
+            paginationHTML += `<button class="page-btn active">${currentPage}</button>`;
+            
+            paginationHTML += `<button class="page-btn" onclick="changePage(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
+            
+            paginationContainer.innerHTML = paginationHTML;
+        }
+
+        function changePage(page) {
+            if (page >= 1 && page <= totalPages) {
+                currentPage = page;
+                loadCheckHistory();
+            }
+        }
+
+        function exportData(exportAll = false) {
+            if (exportAll) {
+                // Export all data
+                exportAllData();
+                return;
+            }
+            
+            // Export only filtered data (current view)
+            const table = document.getElementById('history-table');
+            if (!table || table.style.display === 'none') {
+                alert('No data available to export');
+                return;
+            }
+            
+            // Get headers
+            const headers = Array.from(table.querySelectorAll('thead th'))
+                .map(th => th.textContent.trim());
+            
+            // Get rows
+            const rows = Array.from(table.querySelectorAll('tbody tr'))
+                .map(row => Array.from(row.querySelectorAll('td'))
+                    .map(td => {
+                        // Handle status badges
+                        const badge = td.querySelector('.status-badge');
+                        if (badge) {
+                            return badge.textContent.trim();
+                        }
+                        return td.textContent.trim();
+                    })
+                );
+            
+            // Combine headers and rows
+            const csvContent = [
+                headers.join(','),
+                ...rows.map(row => row.join(','))
+            ].join('\n');
+            
+            // Create download link
+            downloadCSV(csvContent, `check-history-filtered-${new Date().toISOString().slice(0, 10)}.csv`);
+        }
+        
+        async function exportAllData() {
+            // Show loading indicator
+            const loading = document.getElementById('loading');
+            loading.style.display = 'flex';
+            
+            try {
+                // Get all check history data without pagination
+                const params = { limit: 5000 }; // Set a high limit to get as many records as possible
+                
+                // Keep any filters except pagination
+                if (currentFilters.dateRange) {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    
+                    if (currentFilters.dateRange === 'today') {
+                        params.startDate = today.toISOString();
+                    } else if (currentFilters.dateRange === 'week') {
+                        const weekAgo = new Date(today);
+                        weekAgo.setDate(today.getDate() - 7);
+                        params.startDate = weekAgo.toISOString();
+                    } else if (currentFilters.dateRange === 'month') {
+                        const monthAgo = new Date(today);
+                        monthAgo.setDate(today.getDate() - 30);
+                        params.startDate = monthAgo.toISOString();
+                    }
+                }
+                
+                if (currentFilters.userId) {
+                    params.userId = currentFilters.userId;
+                }
+                
+                if (currentFilters.result) {
+                    params.result = currentFilters.result;
+                }
+                
+                const data = await fetchData('/admin/check-history', { params });
+                
+                if (!data || !data.checks || data.checks.length === 0) {
+                    alert('No data available to export');
+                    loading.style.display = 'none';
+                    return;
+                }
+                
+                // Create CSV content
+                const headers = ['Time', 'User', 'Phone Number', 'Result', 'Source', 'IP Address'];
+                
+                const rows = data.checks.map(item => [
+                    formatTime(item.timestamp),
+                    item.username || 'N/A',
+                    item.number,
+                    item.result.includes('✅') ? 'Registered' : 'Not Registered',
+                    item.apiKey ? 'API' : 'Telegram',
+                    item.ipAddress || 'N/A'
+                ]);
+                
+                // Combine headers and rows
+                const csvContent = [
+                    headers.join(','),
+                    ...rows.map(row => row.join(','))
+                ].join('\n');
+                
+                // Create download link
+                downloadCSV(csvContent, `check-history-all-${new Date().toISOString().slice(0, 10)}.csv`);
+            } catch (error) {
+                console.error('Error exporting all data:', error);
+                alert('Error exporting data. Please try again.');
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+        
+        function downloadCSV(csvContent, filename) {
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.display = 'none';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html> 

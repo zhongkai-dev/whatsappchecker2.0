@@ -7,17 +7,32 @@ const path = require('path');
 const crypto = require('crypto');
 const fs = require('fs');
 const bcrypt = require('bcrypt');
-const bodyParser = require('body-parser');
 require('dotenv').config();
 
 // Environment variables
 const PORT = process.env.PORT || 3000;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const CHAT_ID_FOR_QR_CODE = process.env.CHAT_ID_FOR_QR_CODE;
-const MONGO_URI = process.env.MONGO_URI;
+const MONGO_URI = process.env.MONGO_URI|| 'mongodb+srv://zhongkai01:zhongkai01@wschecker.8t0ccr4.mongodb.net/?retryWrites=true&w=majority&appName=WSChecker';
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'Admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin8898@';
 const TOKEN_EXPIRY_HOURS = parseInt(process.env.TOKEN_EXPIRY_HOURS || '24');
+
+// Validate required environment variables
+if (!MONGO_URI) {
+    console.error('Error: MONGO_URI environment variable is required');
+    process.exit(1);
+}
+
+if (!TELEGRAM_BOT_TOKEN) {
+    console.error('Error: TELEGRAM_BOT_TOKEN environment variable is required');
+    process.exit(1);
+}
+
+if (!CHAT_ID_FOR_QR_CODE) {
+    console.error('Error: CHAT_ID_FOR_QR_CODE environment variable is required');
+    process.exit(1);
+}
 
 // MongoDB connection
 const clientMongo = new MongoClient(MONGO_URI);
@@ -279,6 +294,13 @@ bot.on('message', async (msg) => {
             { $set: { userId, username, lastActive: new Date().toISOString() } },
             { upsert: true }
         );
+        
+        // Check if user is banned
+        const user = await usersCollection.findOne({ chatId });
+        if (user && user.isBanned) {
+            bot.sendMessage(chatId, '❌ Your account has been banned. You cannot use this bot.');
+            return;
+        }
     } catch (err) {
         console.error('Error storing user:', err);
     }
@@ -583,6 +605,22 @@ async function processPhoneNumber(chatId, userId, username, text) {
         return;
     }
 
+    // Check daily limit
+    try {
+        const user = await usersCollection.findOne({ userId: userId }); // userId is string
+        if (user) {
+            const dailyLimit = user.dailyLimit || 1000; // Default to 1000
+            const usedToday = user.usedToday || 0;
+            
+            if (usedToday + validNumbers.length > dailyLimit) {
+                bot.sendMessage(chatId, `❌ Daily limit exceeded. You can check ${dailyLimit} numbers per day. You've used ${usedToday}/${dailyLimit} today.`);
+                return;
+            }
+        }
+    } catch (err) {
+        console.error('Error checking daily limit:', err);
+    }
+
     bot.sendMessage(chatId, `Checking ${validNumbers.length} numbers...`);
 
     console.log('Normalized Numbers:', validNumbers);
@@ -600,6 +638,17 @@ async function processPhoneNumber(chatId, userId, username, text) {
 
     try {
         await usageCollection.insertMany(records);
+        
+        // Update user's daily usage count
+        await usersCollection.updateOne(
+            { userId: userId },
+            { 
+                $inc: { 
+                    usedToday: validNumbers.length,
+                    totalChecks: validNumbers.length
+                }
+            }
+        );
     } catch (err) {
         console.error('Error logging usage:', err);
     }
@@ -686,19 +735,7 @@ function generateToken() {
 
 // Validate admin token
 function validateAdminToken(token) {
-    // First, check our regular token map
-    if (ADMIN_TOKENS.has(token)) {
-        return true;
-    }
-    
-    // Emergency token check - support client-side auth tokens when server is having issues
-    if (token && token.startsWith('emergency-token-')) {
-        console.log('Using emergency token access');
-        // Allow emergency tokens
-        return true;
-    }
-    
-    return false;
+    return ADMIN_TOKENS.has(token);
 }
 
 // Add token auth middleware
@@ -713,7 +750,7 @@ function tokenAuth(req, res, next) {
 }
 
 // Add this route before the /admin route
-app.post('/admin-login', bodyParser.json(), async (req, res) => {
+app.post('/admin-login', async (req, res) => {
     try {
         const { username, password } = req.body;
         
@@ -763,7 +800,7 @@ app.post('/admin-login', bodyParser.json(), async (req, res) => {
     }
 });
 
-// Update admin route to serve the static HTML file
+// Update admin route to serve the new main dashboard file, `admin-new.html`
 app.get('/admin', async (req, res) => {
     const token = req.query.token;
     
@@ -772,13 +809,7 @@ app.get('/admin', async (req, res) => {
         return res.redirect('/admin-login.html');
     }
     
-    // If using emergency token, add it to the regular token map for this session
-    if (token && token.startsWith('emergency-token-') && !ADMIN_TOKENS.has(token)) {
-        console.log('Adding emergency token to regular token map');
-        ADMIN_TOKENS.set(token, { createdAt: Date.now() });
-    }
-    
-    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+    res.sendFile(path.join(__dirname, 'public', 'admin-new.html'));
 });
 
 // Admin logout (clears token)
@@ -802,7 +833,24 @@ setInterval(() => {
             ADMIN_TOKENS.delete(token);
         }
     }
-}, 60 * 60 * 1000); // Run every hour
+}, 60 * 60 * 1000);
+
+// Reset daily usage counters - run every day at midnight
+setInterval(async () => {
+    try {
+        const now = new Date();
+        if (now.getHours() === 0 && now.getMinutes() === 0) {
+            console.log('Resetting daily usage counters...');
+            await usersCollection.updateMany(
+                {},
+                { $set: { usedToday: 0 } }
+            );
+            console.log('Daily usage counters reset successfully');
+        }
+    } catch (err) {
+        console.error('Error resetting daily usage counters:', err);
+    }
+}, 60 * 1000); // Check every minute
 
 // Express Web Server
 app.listen(PORT, () => console.log(`Web server running on port ${PORT}`));
@@ -1021,6 +1069,17 @@ app.post('/api/check', validateApiKey, async (req, res) => {
         
         await usageCollection.insertMany(records);
         
+        // Update user's daily usage count
+        await usersCollection.updateOne(
+            { userId: req.apiKey.telegramId }, // userId is string
+            { 
+                $inc: { 
+                    usedToday: validNumbers.length,
+                    totalChecks: validNumbers.length
+                }
+            }
+        );
+        
         // Format response
         const response = validNumbers.map((number, i) => {
             const isRegistered = results[i].includes('✅');
@@ -1199,9 +1258,33 @@ app.get('/admin/check-history', tokenAuth, async (req, res) => {
     const skip = (page - 1) * limit;
     
     try {
-        const total = await usageCollection.countDocuments();
+        // Build query filters
+        const query = {};
         
-        const checks = await usageCollection.find()
+        // Date range filter
+        if (req.query.startDate) {
+            query.timestamp = { $gte: req.query.startDate };
+        }
+        
+        // User filter
+        if (req.query.userId) {
+            query.userId = req.query.userId;
+        }
+        
+        // Result filter
+        if (req.query.result) {
+            if (req.query.result === 'exists') {
+                query.result = { $regex: /✅/ };
+            } else if (req.query.result === 'not_exists') {
+                query.result = { $not: { $regex: /✅/ } };
+            }
+        }
+        
+        // Count total matching documents
+        const total = await usageCollection.countDocuments(query);
+        
+        // Get filtered checks
+        const checks = await usageCollection.find(query)
             .sort({ timestamp: -1 })
             .skip(skip)
             .limit(limit)
@@ -1265,6 +1348,192 @@ app.get('/admin/account-info', tokenAuth, async (req, res) => {
         });
     } catch (err) {
         console.error('Error fetching admin info:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Admin - List all users
+app.get('/admin/users', tokenAuth, async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
+        
+        const total = await usersCollection.countDocuments();
+        
+        const users = await usersCollection.find()
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .toArray();
+            
+        // Format users for display and calculate missing fields
+        const formattedUsers = await Promise.all(users.map(async (user) => {
+            // Calculate total checks for this user
+            const totalChecks = await usageCollection.countDocuments({ userId: user.userId });
+            
+            // Calculate today's usage
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const todayChecks = await usageCollection.countDocuments({ 
+                userId: user.userId,
+                timestamp: { $gte: today.toISOString() }
+            });
+            
+            return {
+                userId: user.userId,
+                username: user.username,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                chatId: user.chatId,
+                createdAt: user.createdAt,
+                lastActive: user.lastActive,
+                isBanned: user.isBanned || false,
+                dailyLimit: user.dailyLimit || 1000, // Default to 1000
+                todayChecks: todayChecks,
+                totalChecks: totalChecks
+            };
+        }));
+        
+        res.json({
+            users: formattedUsers,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit)
+        });
+    } catch (err) {
+        console.error('Error fetching users:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Admin - Remove user
+app.post('/admin/remove-user', tokenAuth, async (req, res) => {
+    const userId = req.body.userId || req.query.userId;
+    
+    if (!userId) {
+        return res.status(400).json({ error: 'User ID is required' });
+    }
+    
+    try {
+        // Remove user from users collection (userId is string)
+        const userResult = await usersCollection.deleteOne({ userId: userId });
+        
+        // Remove user's API keys
+        await apiKeysCollection.deleteMany({ telegramId: userId });
+        
+        // Remove user's usage records
+        await usageCollection.deleteMany({ userId: userId });
+        
+        if (userResult.deletedCount === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        res.json({ 
+            success: true, 
+            message: 'User removed successfully' 
+        });
+    } catch (err) {
+        console.error('Error removing user:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Admin - Ban/Unban user
+app.post('/admin/toggle-ban-user', tokenAuth, async (req, res) => {
+    const userId = req.body.userId || req.query.userId;
+    const isBanned = req.body.isBanned ?? req.query.isBanned;
+    
+    if (!userId) {
+        return res.status(400).json({ error: 'User ID is required' });
+    }
+    
+    try {
+        const result = await usersCollection.updateOne(
+            { userId: userId }, // userId is string
+            { $set: { isBanned: !!isBanned } }
+        );
+        
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        res.json({ 
+            success: true, 
+            message: `User ${isBanned ? 'banned' : 'unbanned'} successfully` 
+        });
+    } catch (err) {
+        console.error('Error toggling user ban status:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Admin - Set user daily limit
+app.post('/admin/set-user-limit', tokenAuth, async (req, res) => {
+    const userId = req.body.userId || req.query.userId;
+    const dailyLimit = req.body.dailyLimit || req.query.dailyLimit;
+    
+    if (!userId) {
+        return res.status(400).json({ error: 'User ID is required' });
+    }
+    
+    if (!dailyLimit || dailyLimit < 0) {
+        return res.status(400).json({ error: 'Daily limit must be a positive number' });
+    }
+    
+    try {
+        const result = await usersCollection.updateOne(
+            { userId: userId }, // userId is string
+            { $set: { dailyLimit: parseInt(dailyLimit) } }
+        );
+        
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        res.json({ 
+            success: true, 
+            message: `Daily limit set to ${dailyLimit} successfully` 
+        });
+    } catch (err) {
+        console.error('Error setting user limit:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Admin - Send message to specific user
+app.post('/admin/send-user-message', tokenAuth, async (req, res) => {
+    const userId = req.body.userId || req.query.userId;
+    const message = req.body.message || req.query.message;
+    
+    if (!userId) {
+        return res.status(400).json({ error: 'User ID is required' });
+    }
+    
+    if (!message) {
+        return res.status(400).json({ error: 'Message is required' });
+    }
+    
+    try {
+        const user = await usersCollection.findOne({ userId: userId }); // userId is string
+        
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        if (!user.chatId) {
+            return res.status(400).json({ error: 'User has no active chat ID' });
+        }
+        
+        // Send message to user
+        await bot.sendMessage(user.chatId, message);
+        
+        res.json({ 
+            success: true, 
+            message: 'Message sent successfully' 
+        });
+    } catch (err) {
+        console.error('Error sending message to user:', err);
         res.status(500).json({ error: 'Server error' });
     }
 });
@@ -1346,7 +1615,7 @@ app.post('/broadcast', tokenAuth, async (req, res) => {
 });
 
 // Add a simplified admin login route for debugging
-app.post('/admin-login-debug', bodyParser.json(), (req, res) => {
+app.post('/admin-login-debug', (req, res) => {
     try {
         const { username, password } = req.body;
         console.log(`Debug login attempt: username=${username}, password=${password ? "provided" : "missing"}`);

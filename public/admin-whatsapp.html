@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Management - Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #f59e0b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --dark: #0f172a;
+            --dark-light: #1e293b;
+            --gray: #64748b;
+            --gray-light: #94a3b8;
+            --white: #ffffff;
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --border: #334155;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            color: var(--white);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .admin-container { 
+            /* display: grid;  */
+            /* grid-template-columns: 280px 1fr;  */
+            min-height: 100vh; }
+        .sidebar { background: var(--bg-secondary); border-right: 1px solid var(--border); padding: 2rem 0; position: fixed; height: 100vh; width: 280px; overflow-y: auto; z-index: 1000; }
+        .sidebar-header { padding: 0 2rem 2rem; border-bottom: 1px solid var(--border); margin-bottom: 2rem; }
+        .logo { display: flex; align-items: center; gap: 0.75rem; font-size: 1.5rem; font-weight: 700; color: var(--primary); }
+        .logo i { font-size: 2rem; }
+        .nav-menu { list-style: none; padding: 0 1rem; }
+        .nav-item { margin-bottom: 0.5rem; }
+        .nav-link { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; color: var(--gray-light); text-decoration: none; border-radius: 12px; transition: all 0.3s ease; font-weight: 500; }
+        .nav-link:hover { background: rgba(99, 102, 241, 0.1); color: var(--primary); transform: translateX(4px); }
+        .nav-link.active { background: var(--primary); color: var(--white); box-shadow: var(--shadow); }
+        .nav-link i { font-size: 1.2rem; width: 20px; }
+        .main-content { margin-left: 280px; padding: 2rem; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+        .page-title { font-size: 2rem; font-weight: 700; color: var(--white); }
+        .user-menu { display: flex; align-items: center; gap: 1rem; }
+        .user-info { text-align: right; }
+        .user-name { font-weight: 600; color: var(--white); }
+        .user-role { font-size: 0.875rem; color: var(--gray); }
+        .user-avatar { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--white); cursor: pointer; transition: transform 0.3s ease; }
+        .user-avatar:hover { transform: scale(1.05); }
+        .whatsapp-section { background: var(--bg-secondary); border-radius: 16px; padding: 2rem; border: 1px solid var(--border); margin-bottom: 2rem; }
+        .section-title { font-size: 1.5rem; font-weight: 600; color: var(--white); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; }
+        .status-indicator { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+        .status-dot { width: 14px; height: 14px; border-radius: 50%; animation: pulse 2s infinite; }
+        .status-dot.online { background: var(--success); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+        .status-dot.offline { background: var(--danger); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+        .status-dot.connecting { background: var(--warning); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+        .btn { padding: 0.75rem 1.5rem; border-radius: 8px; border: none; font-weight: 500; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 0.5rem; font-family: inherit; }
+        .btn-primary { background: var(--primary); color: var(--white); }
+        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
+        .btn-danger { background: var(--danger); color: var(--white); }
+        .btn-danger:hover { background: #dc2626; transform: translateY(-2px); }
+        .qr-container { display: flex; justify-content: center; align-items: center; margin: 2rem 0; }
+        .qr-box { background: var(--white); padding: 1.5rem; border-radius: 16px; box-shadow: var(--shadow); }
+        .alert { padding: 1rem; border-radius: 8px; margin-bottom: 1rem; display: none; }
+        .alert-success { background: rgba(16, 185, 129, 0.2); color: var(--success); border: 1px solid var(--success); }
+        .alert-danger { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+        @media (max-width: 1024px) { 
+            /* .admin-container { grid-template-columns: 1fr; }  */
+            .sidebar { transform: translateX(-100%); transition: transform 0.3s ease; } .sidebar.open { transform: translateX(0); } .main-content { margin-left: 0; } }
+        @media (max-width: 768px) { .header { flex-direction: column; gap: 1rem; align-items: flex-start; } }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fab fa-whatsapp"></i>
+                    <span>WhatsApp Checker</span>
+                </div>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item"><a href="/admin-new.html" class="nav-link"><i class="fas fa-tachometer-alt"></i>Dashboard</a></li>
+                <li class="nav-item"><a href="/admin-history.html" class="nav-link"><i class="fas fa-history"></i>Check History</a></li>
+                <li class="nav-item"><a href="/admin-apikeys.html" class="nav-link"><i class="fas fa-key"></i>API Keys</a></li>
+                <li class="nav-item"><a href="/admin-users.html" class="nav-link"><i class="fas fa-users"></i>User Management</a></li>
+                <li class="nav-item"><a href="/admin-broadcast.html" class="nav-link"><i class="fas fa-broadcast-tower"></i>Broadcast</a></li>
+                <li class="nav-item"><a href="/admin-whatsapp.html" class="nav-link active"><i class="fab fa-whatsapp"></i>WhatsApp</a></li>
+                <li class="nav-item"><a href="/admin-settings.html" class="nav-link"><i class="fas fa-cog"></i>Settings</a></li>
+            </ul>
+        </nav>
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="header">
+                <h1 class="page-title">WhatsApp Management</h1>
+                <div class="user-menu">
+                    <div class="user-info">
+                        <div class="user-name">Admin</div>
+                        <div class="user-role">Administrator</div>
+                    </div>
+                    <div class="user-avatar" onclick="logout()">
+                        <i class="fas fa-user"></i>
+                    </div>
+                </div>
+            </div>
+            <div id="alert" class="alert"></div>
+            <div class="whatsapp-section">
+                <h2 class="section-title"><i class="fab fa-whatsapp"></i>WhatsApp Connection</h2>
+                <div class="status-indicator">
+                    <div id="whatsapp-status-dot" class="status-dot connecting"></div>
+                    <span id="whatsapp-status-text">Checking status...</span>
+                </div>
+                <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+                    <button id="refresh-status" class="btn btn-primary"><i class="fas fa-sync-alt"></i>Refresh Status</button>
+                    <!-- <button id="logout-whatsapp" class="btn btn-danger"><i class="fas fa-sign-out-alt"></i>Logout WhatsApp</button> -->
+                </div>
+                <div id="qr-container" class="qr-container" style="display: none;">
+                    <div class="qr-box" id="qr-box">
+                        <!-- QR Image will be injected here -->
+                    </div>
+                </div>
+            </div>
+            <!-- Session logs removed as endpoint doesn't exist -->
+        </main>
+    </div>
+    <script>
+        // --- Token and Auth Handling ---
+        const urlParams = new URLSearchParams(window.location.search);
+        let authToken = urlParams.get('token') || localStorage.getItem('adminAuthToken');
+
+        if (urlParams.has('token')) {
+            localStorage.setItem('adminAuthToken', authToken);
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        if (!authToken) {
+            window.location.href = '/admin-login.html';
+        }
+
+        // --- Utility Functions ---
+        async function fetchData(urlPath, options = {}) {
+            const url = new URL(urlPath, window.location.origin);
+            url.searchParams.set('token', authToken);
+            
+            try {
+                const response = await fetch(url, options);
+                if (response.status === 401) { logout(); return; }
+                const data = await response.json();
+                if (!response.ok) { throw new Error(data.error || 'API request failed'); }
+                return data;
+            } catch (error) {
+                console.error(`Fetch error for ${urlPath}:`, error);
+                showAlert(error.message, 'danger');
+                throw error;
+            }
+        }
+        
+        function logout() {
+            const token = localStorage.getItem('adminAuthToken');
+            localStorage.removeItem('adminAuthToken');
+            window.location.href = token ? `/admin-logout?token=${token}` : '/admin-login.html';
+        }
+
+        function showAlert(message, type = 'success') {
+            const alertEl = document.getElementById('alert');
+            alertEl.textContent = message;
+            alertEl.className = `alert alert-${type}`;
+            alertEl.style.display = 'block';
+            setTimeout(() => alertEl.style.display = 'none', 5000);
+        }
+
+        // --- Page Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+                if (link.href) {
+                    const url = new URL(link.href);
+                    url.searchParams.set('token', authToken);
+                    link.href = url.href;
+                }
+            });
+            const currentPagePath = window.location.pathname;
+            document.querySelector(`.nav-link[href="${currentPagePath}"]`)?.classList.add('active');
+
+            document.getElementById('refresh-status').addEventListener('click', loadWhatsAppStatus);
+            loadWhatsAppStatus();
+        });
+
+        // --- Main Functions ---
+        async function loadWhatsAppStatus() {
+            try {
+                const status = await fetchData('/admin/whatsapp-status');
+                if (status) updateWhatsAppStatus(status);
+            } catch (error) {
+                updateWhatsAppStatus({ state: 'DISCONNECTED', message: 'Error fetching status.' });
+            }
+        }
+
+        function updateWhatsAppStatus(status) {
+            const dot = document.getElementById('whatsapp-status-dot');
+            const text = document.getElementById('whatsapp-status-text');
+            const qrContainer = document.getElementById('qr-container');
+            const qrBox = document.getElementById('qr-box');
+
+            let dotClass = 'offline';
+            if (status.state === 'CONNECTED') dotClass = 'online';
+            if (status.state === 'CONNECTING' || status.qr) dotClass = 'connecting';
+            dot.className = `status-dot ${dotClass}`;
+
+            text.textContent = status.message;
+
+            if (status.qr) {
+                qrContainer.style.display = 'flex';
+                qrBox.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(status.qr)}&size=200x200&bgcolor=ffffff&color=0f172a" alt="QR Code" style="max-width: 200px;">
+                                   <div style="color: var(--dark); text-align: center; margin-top: 1rem;">Scan this QR code with WhatsApp</div>`;
+            } else {
+                qrContainer.style.display = 'none';
+                qrBox.innerHTML = '';
+            }
+        }
+    </script>
+</body>
+</html> 
