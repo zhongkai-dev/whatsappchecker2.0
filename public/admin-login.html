@@ -4,16 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login - WhatsApp Checker</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
     <style>
         :root {
             --primary: #25D366;
-            --dark: #1a1a1a;
+            --primary-dark: #128C7E;
+            --primary-light: #DCF8C6;
+            --dark: #121212;
             --light: #ffffff;
-            --gray: #242424;
+            --gray: #1e1e1e;
             --gray-light: #2a2a2a;
+            --gray-lighter: #333333;
             --danger: #ff4444;
             --success: #00C851;
-            --font-mono: 'Courier New', monospace;
+            --font-main: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
         * {
@@ -25,7 +30,7 @@
         body {
             background-color: var(--dark);
             color: var(--light);
-            font-family: 'Segoe UI', Arial, sans-serif;
+            font-family: var(--font-main);
             line-height: 1.6;
             min-height: 100vh;
             overflow-x: hidden;
@@ -42,181 +47,279 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: radial-gradient(var(--gray-light) 1px, transparent 1px);
-            background-size: 20px 20px;
-            opacity: 0.08;
+            background: 
+                radial-gradient(circle at 10% 20%, rgba(37, 211, 102, 0.05) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(37, 211, 102, 0.05) 0%, transparent 20%),
+                linear-gradient(to bottom right, rgba(18, 18, 18, 1), rgba(30, 30, 30, 1));
             z-index: -1;
         }
 
-        /* Login Card */
-        .login-card {
-            background-color: var(--gray);
-            border-radius: 8px;
-            padding: 2.5rem;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        /* Login Container */
+        .login-container {
+            display: flex;
+            width: 90%;
+            max-width: 900px;
+            height: 500px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
         }
 
-        .login-header {
-            margin-bottom: 2rem;
+        /* Brand Side */
+        .login-brand {
+            flex: 1;
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-brand::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+            animation: pulse 15s infinite linear;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 0.5; }
+        }
+
+        .brand-logo {
+            position: relative;
+            z-index: 2;
+            margin-bottom: 1.5rem;
+        }
+
+        .brand-logo img {
+            width: 100px;
+            height: auto;
+            object-fit: contain;
+        }
+
+        .brand-title {
+            position: relative;
+            z-index: 2;
+            color: var(--light);
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
             text-align: center;
         }
 
-        .login-logo {
+        .brand-subtitle {
+            position: relative;
+            z-index: 2;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.1rem;
+            text-align: center;
+        }
+
+        /* Form Side */
+        .login-form-container {
+            flex: 1.2;
+            background-color: var(--gray);
+            padding: 3rem 2.5rem;
             display: flex;
+            flex-direction: column;
             justify-content: center;
-            margin-bottom: 1rem;
         }
 
-        .login-logo svg {
-            width: 60px;
-            height: 60px;
-            fill: var(--primary);
+        .form-header {
+            margin-bottom: 2rem;
         }
 
-        .login-title {
-            color: var(--primary);
+        .form-title {
             font-size: 1.8rem;
+            font-weight: 600;
             margin-bottom: 0.5rem;
+            color: var(--light);
         }
 
-        .login-subtitle {
-            opacity: 0.7;
+        .form-subtitle {
+            color: rgba(255, 255, 255, 0.7);
             font-size: 1rem;
         }
 
         /* Form */
         .form-group {
             margin-bottom: 1.5rem;
+            position: relative;
         }
 
         .form-group label {
             display: block;
             margin-bottom: 0.5rem;
-            font-weight: bold;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.9);
         }
 
         .form-control {
             width: 100%;
-            padding: 0.75rem;
-            border-radius: 4px;
+            padding: 0.9rem 1rem;
+            border-radius: 8px;
             background-color: var(--gray-light);
-            border: 1px solid #333;
+            border: 1px solid var(--gray-lighter);
             color: var(--light);
-            font-family: 'Segoe UI', Arial, sans-serif;
+            font-family: var(--font-main);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.2);
         }
 
         .btn {
             display: inline-block;
             width: 100%;
-            padding: 0.75rem 1.5rem;
-            border-radius: 4px;
-            background-color: var(--primary);
+            padding: 0.9rem 1.5rem;
+            border-radius: 8px;
+            background: linear-gradient(to right, var(--primary), var(--primary-dark));
             color: var(--dark);
-            font-weight: bold;
+            font-weight: 600;
             cursor: pointer;
             border: none;
             text-align: center;
             font-size: 1rem;
-            transition: opacity 0.2s, transform 0.2s;
+            transition: all 0.3s ease;
+            margin-top: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: all 0.6s;
         }
 
         .btn:hover {
-            opacity: 0.9;
             transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .message {
+            padding: 0.9rem;
+            margin-bottom: 1.5rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            display: none;
         }
 
         .error-message {
             background-color: rgba(255, 68, 68, 0.1);
             border-left: 4px solid var(--danger);
-            padding: 0.75rem;
-            margin-bottom: 1.5rem;
-            display: none;
         }
         
         .status-message {
             background-color: rgba(37, 211, 102, 0.1);
             border-left: 4px solid var(--primary);
-            padding: 0.75rem;
-            margin-bottom: 1.5rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .login-container {
+                flex-direction: column;
+                height: auto;
+                max-width: 500px;
+            }
+
+            .login-brand {
+                padding: 2rem 1rem;
+            }
+
+            .brand-logo img {
+                width: 70px;
+                height: auto;
+            }
+
+            .login-form-container {
+                padding: 2rem 1.5rem;
+            }
         }
     </style>
 </head>
 <body>
     <div class="bg-pattern"></div>
 
-    <div class="login-card">
-        <div class="login-header">
-            <div class="login-logo">
-                <svg viewBox="0 0 24 24">
-                    <path d="M12 2C6.5 2 2 6.5 2 12c0 2 .5 4 1.5 5.5L2 22l4.5-1.5C8 21.5 10 22 12 22c5.5 0 10-4.5 10-10S17.5 2 12 2zm0 18c-1.8 0-3.4-.4-4.9-1.2l-.3-.2-3.3 1 1-3.3-.2-.3c-.8-1.4-1.2-3-1.2-4.9 0-4.9 4-8.9 8.9-8.9s9 4 9 8.9-4 9-9 9zm5.3-6.5c-.3-.1-1.5-.8-1.8-.9-.3-.1-.4-.1-.6.1-.2.2-.6.9-.8 1-.2.2-.3.2-.6 0-.7-.3-1.4-.5-2-1.2-.4-.4-.6-.9-.7-1.1v-.1c.2-.2.4-.3.5-.6.2-.2.3-.3.4-.5v-.5c0-.2-.6-1.5-.8-2.1-.2-.6-.4-.5-.6-.5h-.5c-.2 0-.5.1-.7.3-.2.2-.9.9-.9 2.2 0 1.3 1 2.6 1.1 2.8.1.2 2 3.2 4.9 4.3 2.9 1.1 2.9.8 3.4.7.5-.1 1.5-.7 1.8-1.3.2-.6.2-1.2.2-1.3-.1-.1-.3-.2-.6-.3z"/>
-                </svg>
+    <div class="login-container">
+        <div class="login-brand">
+            <div class="brand-logo">
+                <img src="images/whatsapp_logo_icon_154480.webp" alt="WhatsApp Logo">
             </div>
-            <h1 class="login-title">Admin Login</h1>
-            <p class="login-subtitle">WhatsApp Checker Dashboard</p>
+            <h1 class="brand-title">WhatsApp Checker</h1>
+            <p class="brand-subtitle">Verification Management System</p>
         </div>
 
-        <div id="error-message" class="error-message"></div>
-
-        <form id="login-form">
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" class="form-control" required>
+        <div class="login-form-container">
+            <div class="form-header">
+                <h2 class="form-title">Admin Login</h2>
+                <p class="form-subtitle">Sign in to access your dashboard</p>
             </div>
 
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" class="form-control" required>
-            </div>
+            <div id="error-message" class="message error-message"></div>
 
-            <button type="submit" class="btn">Log In</button>
-            
-            <div style="margin-top: 15px; text-align: center;">
-                <a href="#" id="emergency-access" style="color: var(--primary); text-decoration: none; font-size: 0.8rem;">Emergency Access</a>
-            </div>
-        </form>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" class="form-control" required>
+                </div>
+
+                <button type="submit" class="btn">Sign In</button>
+            </form>
+        </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Hardcoded admin credentials (for emergency use only)
-            const ADMIN_USERNAME = 'Admin';
-            const ADMIN_PASSWORD = 'Admin8898@';
-            
-            // Create a static token format using a consistent pattern with the username and password
-            // This is not secure but will allow access when the server is having problems
-            function generateStaticToken(username, password) {
-                // Simple hashing function (not secure, just for demonstration)
-                let hash = 0;
-                const str = username + password;
-                for (let i = 0; i < str.length; i++) {
-                    const char = str.charCodeAt(i);
-                    hash = ((hash << 5) - hash) + char;
-                    hash = hash & hash; // Convert to 32bit integer
-                }
-                return 'emergency-token-' + Math.abs(hash).toString(16);
-            }
-            
-            // Check token validity without server
-            function validateToken(token) {
-                // Check if the token follows our emergency format
-                return token && (
-                    token === generateStaticToken(ADMIN_USERNAME, ADMIN_PASSWORD) || 
-                    token.startsWith('emergency-token-')
-                );
-            }
-            
             // Check if user is already logged in
             const authToken = localStorage.getItem('adminAuthToken');
             if (authToken) {
-                if (validateToken(authToken)) {
-                    // Redirect to admin dashboard with token
-                    window.location.href = `/admin?token=${authToken}`;
-                } else {
-                    // Clear invalid token
-                    localStorage.removeItem('adminAuthToken');
-                }
+                // Validate token with server
+                fetch(`/admin/validate-token?token=${authToken}`)
+                    .then(response => {
+                        if (response.ok) {
+                            window.location.href = `/admin-new.html?token=${authToken}`;
+                        } else {
+                            localStorage.removeItem('adminAuthToken');
+                        }
+                    })
+                    .catch(() => {
+                        // Clear invalid token on error
+                        localStorage.removeItem('adminAuthToken');
+                    });
             }
             
             const loginForm = document.getElementById('login-form');
@@ -233,74 +336,33 @@
                     return;
                 }
                 
-                try {
-                    // First attempt client-side authentication
-                    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+                // Attempt server authentication
+                fetch('/admin-login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                })
+                .then(async response => {
+                    if (response.ok) {
+                        const result = await response.json();
+                        localStorage.setItem('adminAuthToken', result.token);
                         showError('Login successful! Redirecting...', true);
-                        
-                        // Generate token
-                        const token = generateStaticToken(username, password);
-                        
-                        // Store token in localStorage
-                        localStorage.setItem('adminAuthToken', token);
                         
                         // Redirect to admin dashboard with token
                         setTimeout(() => {
-                            window.location.href = `/admin?token=${token}`;
+                            window.location.href = `/admin-new.html?token=${result.token}`;
                         }, 1000);
-                        
-                        return;
+                    } else {
+                        const error = await response.json();
+                        showError(error.message);
                     }
-                    
-                    // If client-side auth fails, try server auth
-                    showError('Attempting server login...', true);
-                    
-                    // This will still try the server but we don't rely on it
-                    fetch('/admin-login', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ username, password })
-                    })
-                    .then(response => response.json())
-                    .then(result => {
-                        if (result.success && result.token) {
-                            // Store token in localStorage
-                            localStorage.setItem('adminAuthToken', result.token);
-                            
-                            // Redirect to admin dashboard with token
-                            window.location.href = `/admin?token=${result.token}`;
-                        } else {
-                            showError('Invalid credentials. Please try again.');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Login error:', error);
-                        showError('Authentication failed. Invalid credentials.');
-                    });
-                } catch (error) {
+                })
+                .catch(error => {
                     console.error('Login error:', error);
-                    showError('An unexpected error occurred. Please try again.');
-                }
-            });
-            
-            // Emergency access button
-            document.getElementById('emergency-access').addEventListener('click', function(e) {
-                e.preventDefault();
-                
-                showError('Generating emergency access token...', true);
-                
-                // Generate a static emergency token
-                const token = generateStaticToken(ADMIN_USERNAME, ADMIN_PASSWORD);
-                
-                // Store token in localStorage
-                localStorage.setItem('adminAuthToken', token);
-                
-                // Redirect to admin dashboard with token
-                setTimeout(() => {
-                    window.location.href = `/admin?token=${token}`;
-                }, 1000);
+                    showError('Authentication failed. Please try again.');
+                });
             });
             
             function showError(message, isStatus = false) {
@@ -308,9 +370,9 @@
                 errorMessage.style.display = 'block';
                 
                 if (isStatus) {
-                    errorMessage.className = 'status-message';
+                    errorMessage.className = 'message status-message';
                 } else {
-                    errorMessage.className = 'error-message';
+                    errorMessage.className = 'message error-message';
                 }
             }
         });

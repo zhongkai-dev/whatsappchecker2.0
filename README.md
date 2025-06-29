@@ -93,10 +93,18 @@ console.log(result);
 
 Access the admin dashboard at `/admin-login.html` using the credentials set in your `.env` file. The dashboard provides:
 
-- Usage statistics
-- User management
-- WhatsApp connection status
-- API key management
+- **Dashboard Overview**: Real-time statistics and recent activity
+- **User Management**: 
+  - View all registered users with pagination
+  - Remove users from the system
+  - Ban/unban users to control access
+  - Set daily usage limits for individual users
+  - Send direct messages to specific users
+- **Check History**: View all phone number verification attempts
+- **API Key Management**: Manage API keys and their status
+- **Broadcast Messages**: Send messages to all users
+- **WhatsApp Status**: Monitor WhatsApp connection status
+- **Account Settings**: Update admin credentials
 
 ## Deployment
 
